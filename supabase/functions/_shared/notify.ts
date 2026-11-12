@@ -21,7 +21,7 @@ export interface DigestDeadline {
   days: number;
 }
 
-const KIND_LABEL: Record<string, string> = { regulatory: "Normativa", reporting: "Segnalazione", consultation: "Consultazione", internal: "Interna" };
+const KIND_LABEL: Record<string, string> = { regulatory: "Normativa", reporting: "Segnalazione", consultation: "Consultazione", internal: "Interna", control: "Controllo" };
 const whenLabel = (n: number) => n < 0 ? `scaduta da ${-n} g` : n === 0 ? "oggi" : n === 1 ? "domani" : `tra ${n} giorni`;
 const itDate = (d: string) => new Date(d + "T12:00:00Z").toLocaleDateString("it-IT", { day: "numeric", month: "long", timeZone: "Europe/Rome" });
 

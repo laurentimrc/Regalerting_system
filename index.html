@@ -299,9 +299,9 @@ pre.diff .del { color: var(--crit); background: var(--crit-soft); display: block
 .dl-acts { display: flex; gap: 4px; align-items: center; }
 .when { font-weight: 600; font-size: 12.5px; white-space: nowrap; }
 .when.over { color: var(--crit); } .when.soon { color: var(--high); } .when.later { color: var(--muted); font-weight: 500; }
-.k-regulatory { color: #1f4fa3; background: #e6eefb; } .k-reporting { color: #8a4b08; background: #fdf0df; } .k-consultation { color: #0b6e5c; background: #e0f3ee; } .k-internal { color: #5b4a8b; background: #eeeaf8; }
-:root[data-theme="dark"] .k-regulatory, :root[data-theme="dark"] .k-reporting, :root[data-theme="dark"] .k-consultation, :root[data-theme="dark"] .k-internal { background: var(--surface-2); }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .k-regulatory, :root:not([data-theme="light"]) .k-reporting, :root:not([data-theme="light"]) .k-consultation, :root:not([data-theme="light"]) .k-internal { background: var(--surface-2); filter: brightness(1.6); } }
+.k-regulatory { color: #1f4fa3; background: #e6eefb; } .k-reporting { color: #8a4b08; background: #fdf0df; } .k-consultation { color: #0b6e5c; background: #e0f3ee; } .k-internal { color: #5b4a8b; background: #eeeaf8; } .k-control { color: #8a2d4b; background: #fbe8ee; }
+:root[data-theme="dark"] .k-regulatory, :root[data-theme="dark"] .k-reporting, :root[data-theme="dark"] .k-consultation, :root[data-theme="dark"] .k-internal, :root[data-theme="dark"] .k-control { background: var(--surface-2); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .k-regulatory, :root:not([data-theme="light"]) .k-reporting, :root:not([data-theme="light"]) .k-consultation, :root:not([data-theme="light"]) .k-internal, :root:not([data-theme="light"]) .k-control { background: var(--surface-2); filter: brightness(1.6); } }
 .proposals { border-color: color-mix(in srgb, var(--accent) 30%, var(--line)); }
 .proposals .ph { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); }
 .proposals .ph svg { width: 16px; height: 16px; color: var(--accent); }
@@ -321,7 +321,32 @@ pre.diff .del { color: var(--crit); background: var(--crit-soft); display: block
 .linked { display: grid; }
 .linked .dl { grid-template-columns: 46px minmax(0, 1fr) auto; padding: 10px 14px; }
 .linked .datebox { width: 46px; } .linked .datebox b { font-size: 17px; }
-.kinds.kinds4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.kinds.kinds4 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+/* importazione */
+#dlg-imp { width: min(1040px, calc(100vw - 32px)); }
+.steps { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+.steps span { display: inline-flex; align-items: center; gap: 6px; }
+.steps i { font-style: normal; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 600; background: var(--surface-2); }
+.steps .on { color: var(--fg); font-weight: 600; } .steps .on i { background: var(--accent); color: var(--accent-ink); }
+.steps .ok i { background: var(--ok-soft); color: var(--ok); }
+.drop { border: 2px dashed var(--line-strong); border-radius: 12px; padding: 32px 20px; text-align: center; display: grid; gap: 8px; justify-items: center; cursor: pointer; transition: border-color .15s, background .15s; }
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop svg { width: 32px; height: 32px; color: var(--accent); }
+.drop b { font-size: 15px; }
+.map { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.map .field span.sample { font-size: 12px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.prev-wrap { overflow: auto; max-height: 48vh; border: 1px solid var(--line); border-radius: 10px; }
+table.prev { width: 100%; border-collapse: collapse; font-size: 13px; }
+table.prev th { position: sticky; top: 0; background: var(--surface-2); text-align: left; padding: 8px; font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; z-index: 1; white-space: nowrap; }
+table.prev td { padding: 4px 6px; border-top: 1px solid var(--line); vertical-align: middle; }
+table.prev input, table.prev select { padding: 5px 7px; font-size: 13px; min-width: 110px; }
+table.prev td.t input { min-width: 240px; }
+table.prev tr.off td { opacity: .45; }
+table.prev .st { font-size: 12px; font-weight: 500; min-width: 150px; max-width: 230px; line-height: 1.35; }
+table.prev tr.bad td { background: var(--crit-soft); }
+.st.ok { color: var(--ok); } .st.warn { color: var(--warn); } .st.err { color: var(--crit); }
+.imp-sum { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--fg-2); align-items: center; }
+.imp-sum b { font-variant-numeric: tabular-nums; }
 @media (max-width: 860px) {
   .cal-d { min-height: 64px; padding: 4px; } .cal-ev { font-size: 0; padding: 0; width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
   .cal-d .evs { display: flex; flex-wrap: wrap; gap: 3px; } .cal-more { display: none; }
@@ -443,6 +468,8 @@ details.adv[open] summary { margin-bottom: 12px; }
   <symbol id="i-repeat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></symbol>
   <symbol id="i-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></symbol>
   <symbol id="i-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></symbol>
+  <symbol id="i-sheet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 9v12"/></symbol>
   <symbol id="i-logo" viewBox="0 0 24 24" fill="none" stroke="#f2c14e" stroke-width="2.4" stroke-linecap="round"><path d="M7 18V6h6a3.5 3.5 0 0 1 0 7H7m5 0 5 5"/></symbol>
 </svg>
 
@@ -563,6 +590,7 @@ details.adv[open] summary { margin-bottom: 12px; }
           <div class="dl-toolbar">
             <div class="seg" role="group" aria-label="Vista"><button id="dl-v-list" aria-pressed="true">Elenco</button><button id="dl-v-month" aria-pressed="false">Mese</button></div>
             <button class="btn" id="b-ics" title="Scarica le scadenze aperte per Outlook o Google Calendar"><svg><use href="#i-download"/></svg>.ics</button>
+            <button class="btn" id="b-import" data-edit title="Importa un calendario di controlli da Excel, CSV o .ics"><svg><use href="#i-upload"/></svg>Importa</button>
             <button class="btn primary" id="b-add-dl" data-edit><svg><use href="#i-plus"/></svg>Nuova scadenza</button>
           </div>
         </div>
@@ -570,6 +598,7 @@ details.adv[open] summary { margin-bottom: 12px; }
         <div class="filters" style="padding:0;border:0">
           <span class="pillselect"><select id="dl-f-kind" aria-label="Tipo"><option value="">Tipo</option></select></span>
           <span class="pillselect"><select id="dl-f-auth" aria-label="Autorità"><option value="">Autorità</option></select></span>
+          <span class="pillselect"><select id="dl-f-area" aria-label="Area"><option value="">Area</option></select></span>
           <button class="chiptoggle" id="dl-f-mine" aria-pressed="false">Assegnate a me</button>
           <button class="chiptoggle" id="dl-f-alerts" aria-pressed="true" title="Mostra anche le scadenze interne fissate nel triage degli alert">Scadenze di triage</button>
         </div>
@@ -668,11 +697,14 @@ details.adv[open] summary { margin-bottom: 12px; }
           <label class="kind"><input type="radio" name="d-kind" value="reporting"><b>Segnalazione</b><span>Invii periodici alle autorità.</span></label>
           <label class="kind"><input type="radio" name="d-kind" value="consultation"><b>Consultazione</b><span>Termine per inviare commenti.</span></label>
           <label class="kind"><input type="radio" name="d-kind" value="internal"><b>Interna</b><span>Adeguamenti, policy, formazione.</span></label>
+          <label class="kind"><input type="radio" name="d-kind" value="control"><b>Controllo</b><span>Verifiche del piano dei controlli.</span></label>
         </div></div>
       <div class="grid2">
         <div class="field"><label for="d-authority">Autorità</label><input id="d-authority" list="dl-auth" placeholder="Facoltativo"></div>
         <div class="field"><label for="d-reg">Riferimento normativo</label><input id="d-reg" placeholder="Es. MiCAR art. 72, D.Lgs. 231/2007"></div>
-        <div class="field"><label for="d-rec">Si ripete</label><select id="d-rec"><option value="none">No</option><option value="monthly">Ogni mese</option><option value="quarterly">Ogni trimestre</option><option value="yearly">Ogni anno</option></select><span class="hint">Completandola, RegAlert crea la scadenza successiva.</span></div>
+        <div class="field"><label for="d-area">Area</label><input id="d-area" list="dl-areas" placeholder="Es. AML, MiCAR, Market abuse"><datalist id="dl-areas"></datalist></div>
+        <div class="field"><label for="d-owner-label">Funzione responsabile esterna al team</label><input id="d-owner-label" placeholder="Es. Funzione Risk, IT"><span class="hint">Se il responsabile non usa RegAlert.</span></div>
+        <div class="field"><label for="d-rec">Si ripete</label><select id="d-rec"><option value="none">No</option><option value="weekly">Ogni settimana</option><option value="monthly">Ogni mese</option><option value="quarterly">Ogni trimestre</option><option value="semiannual">Ogni semestre</option><option value="yearly">Ogni anno</option></select><span class="hint">Completandola, RegAlert crea la scadenza successiva.</span></div>
         <div class="field"><label for="d-remind">Preavviso nel digest</label><select id="d-remind"><option value="1">1 giorno prima</option><option value="3">3 giorni prima</option><option value="7" selected>7 giorni prima</option><option value="14">14 giorni prima</option><option value="30">30 giorni prima</option><option value="60">60 giorni prima</option></select></div>
       </div>
       <div class="field"><label for="d-url">Link al documento</label><input id="d-url" type="url" placeholder="https://"></div>
@@ -680,6 +712,16 @@ details.adv[open] summary { margin-bottom: 12px; }
     </div>
     <div class="dlg-f"><button type="button" class="btn danger" id="b-del-dl" hidden style="margin-right:auto">Elimina</button><button type="button" class="btn" data-close-dl>Annulla</button><button class="btn primary">Salva</button></div>
   </form>
+</dialog>
+
+<!-- dialog importazione -->
+<dialog id="dlg-imp">
+  <div style="display:flex;flex-direction:column;max-height:calc(100vh - 48px)">
+    <div class="dlg-h"><h3>Importa un calendario di controlli</h3><div class="steps" id="imp-steps" style="margin-left:16px"></div><button type="button" class="btn ghost sm" data-close-imp aria-label="Chiudi"><svg><use href="#i-x"/></svg></button></div>
+    <div class="dlg-b" id="imp-body"></div>
+    <div class="dlg-f" id="imp-foot"></div>
+  </div>
+  <input type="file" id="imp-file" accept=".xlsx,.xls,.xlsm,.ods,.csv,.txt,.ics" hidden>
 </dialog>
 
 <!-- dialog conferma -->
@@ -692,6 +734,7 @@ details.adv[open] summary { margin-bottom: 12px; }
 <div id="toast" class="toast" role="status" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 <script>
 const CONFIG = { url: "https://cyyblaqhuevqlcjvtmsm.supabase.co", key: "sb_publishable_8k8LK1arFyuj7jbNL30fsQ_33zES9iB" };
 
@@ -1136,8 +1179,8 @@ async function loadSettings() {
 }
 
 // ---------------------------------------------------------------- scadenziario
-const DL_KIND = { regulatory: "Normativa", reporting: "Segnalazione", consultation: "Consultazione", internal: "Interna" };
-const DL_REC = { monthly: "ogni mese", quarterly: "ogni trimestre", yearly: "ogni anno" };
+const DL_KIND = { regulatory: "Normativa", reporting: "Segnalazione", consultation: "Consultazione", internal: "Interna", control: "Controllo" };
+const DL_REC = { weekly: "ogni settimana", monthly: "ogni mese", quarterly: "ogni trimestre", semiannual: "ogni semestre", yearly: "ogni anno" };
 let deadlines = [], dlView = store.get("ra_dl_view") || "list", calMonth = null, editingDl = null;
 const todayKey = () => dayKey(Date.now());
 const dDays = (d) => Math.round((Date.parse(d + "T00:00:00Z") - Date.parse(todayKey() + "T00:00:00Z")) / 86400000);
@@ -1165,11 +1208,11 @@ function updateDlBadge() {
 
 // scadenze manuali + scadenze di triage degli alert, in un formato unico
 function dlItems({ includeDone = false } = {}) {
-  const kind = $("#dl-f-kind").value, au = $("#dl-f-auth").value, mine = $("#dl-f-mine").getAttribute("aria-pressed") === "true", withAlerts = $("#dl-f-alerts").getAttribute("aria-pressed") === "true";
+  const kind = $("#dl-f-kind").value, au = $("#dl-f-auth").value, ar = $("#dl-f-area").value, mine = $("#dl-f-mine").getAttribute("aria-pressed") === "true", withAlerts = $("#dl-f-alerts").getAttribute("aria-pressed") === "true";
   const items = deadlines.filter((d) => d.status !== "proposed" && (includeDone || d.status === "open")).map((d) => ({ ...d, _type: "dl" }));
   if (withAlerts) for (const a of alerts) if (a.due_date && (includeDone || isOpen(a)))
     items.push({ _type: "alert", id: "a" + a.id, alert_id: a.id, title: a.title, due_date: a.due_date, kind: "internal", authority: a.source_authority, assignee: a.assignee, status: isOpen(a) ? "open" : "done", recurrence: "none" });
-  return items.filter((d) => (!kind || d.kind === kind) && (!au || d.authority === au) && (!mine || d.assignee === me.id))
+  return items.filter((d) => (!kind || d.kind === kind) && (!au || d.authority === au) && (!ar || d.area === ar) && (!mine || d.assignee === me.id))
     .sort((a, b) => a.due_date.localeCompare(b.due_date));
 }
 
@@ -1189,9 +1232,10 @@ function dlRow(d, compact = false) {
         ${d.status === "done" ? `<span>completata ${d.done_at ? relTime(d.done_at) : ""}</span>` : `<span class="when ${whenCls(n)}">${whenTxt(n)}</span>`}
         <span class="badge k-${d.kind}">${DL_KIND[d.kind]}</span>
         ${d.authority ? `<span>${esc(d.authority)}</span>` : ""}
+        ${d.area ? `<span class="tag">${esc(d.area)}</span>` : ""}
         ${d.regulation ? `<span class="tag">${esc(d.regulation)}</span>` : ""}
         ${d.recurrence && d.recurrence !== "none" ? `<span title="Ricorrente">${icon("repeat").replace("<svg", '<svg style="width:13px;height:13px;vertical-align:-2px"')} ${DL_REC[d.recurrence]}</span>` : ""}
-        ${who ? `<span style="display:inline-flex;gap:5px;align-items:center">${avatar(who, "sm")}${compact ? "" : esc(who.full_name || who.email)}</span>` : `<span>senza responsabile</span>`}
+        ${who ? `<span style="display:inline-flex;gap:5px;align-items:center">${avatar(who, "sm")}${compact ? "" : esc(who.full_name || who.email)}</span>` : d.owner_label ? `<span>${icon("user").replace("<svg", '<svg style="width:13px;height:13px;vertical-align:-2px"')} ${esc(d.owner_label)}</span>` : `<span>senza responsabile</span>`}
         ${!compact && d.alert_id && !isAlert ? `<a href="#" data-goto-alert="${d.alert_id}">alert collegato</a>` : ""}
       </div>
     </div>
@@ -1208,14 +1252,18 @@ function renderDeadlines() {
   $("#dl-f-kind").innerHTML = `<option value="">Tipo</option>${kinds}`; $("#dl-f-kind").value = curK;
   const auths = [...new Set([...deadlines.map((d) => d.authority), ...alerts.filter((a) => a.due_date).map((a) => a.source_authority)].filter(Boolean))].sort();
   $("#dl-f-auth").innerHTML = `<option value="">Autorità</option>${auths.map((a) => `<option>${esc(a)}</option>`).join("")}`; $("#dl-f-auth").value = curA;
-  ["#dl-f-kind", "#dl-f-auth"].forEach((s) => $(s).classList.toggle("on", !!$(s).value));
+  const areas = [...new Set(deadlines.map((d) => d.area).filter(Boolean))].sort(), curAr = $("#dl-f-area").value;
+  $("#dl-f-area").innerHTML = `<option value="">Area</option>${areas.map((a) => `<option>${esc(a)}</option>`).join("")}`; $("#dl-f-area").value = curAr;
+  $("#dl-f-area").parentElement.hidden = !areas.length;
+  $("#dl-areas").innerHTML = areas.map((a) => `<option>${esc(a)}</option>`).join("");
+  ["#dl-f-kind", "#dl-f-auth", "#dl-f-area"].forEach((s) => $(s).classList.toggle("on", !!$(s).value));
   $("#dl-v-list").setAttribute("aria-pressed", dlView === "list"); $("#dl-v-month").setAttribute("aria-pressed", dlView === "month");
 
   const open = dlItems();
   const over = open.filter((d) => dDays(d.due_date) < 0), week = open.filter((d) => dDays(d.due_date) >= 0 && dDays(d.due_date) <= 7);
   const month = open.filter((d) => dDays(d.due_date) > 7 && dDays(d.due_date) <= 30), later = open.filter((d) => dDays(d.due_date) > 30);
   $("#dl-stats").innerHTML = [[over.length, "scadute", over.length ? "var(--crit)" : ""], [week.length, "nei prossimi 7 giorni", week.length ? "var(--high)" : ""],
-    [month.length, "entro 30 giorni"], [open.filter((d) => !d.assignee).length, "senza responsabile"]]
+    [month.length, "entro 30 giorni"], [open.filter((d) => !d.assignee && !d.owner_label).length, "senza responsabile"]]
     .map(([n, l, c]) => `<div class="card stat"><b style="${c ? `color:${c}` : ""}">${n}</b><span>${l}</span></div>`).join("");
 
   const props = deadlines.filter((d) => d.status === "proposed");
@@ -1272,6 +1320,7 @@ function openDlForm(d = null, fromAlert = null) {
   $("#d-assignee").value = d?.assignee || (d ? "" : me.id);
   $$('input[name="d-kind"]').forEach((r) => (r.checked = r.value === (d?.kind || "regulatory")));
   $("#d-authority").value = d?.authority || fromAlert?.source_authority || ""; $("#d-reg").value = d?.regulation || "";
+  $("#d-area").value = d?.area || ""; $("#d-owner-label").value = d?.owner_label || "";
   $("#d-rec").value = d?.recurrence || "none"; $("#d-remind").value = String(d?.remind_days ?? 7);
   if (![...$("#d-remind").options].some((o) => o.value === $("#d-remind").value)) $("#d-remind").value = "7";
   $("#d-url").value = d?.url || fromAlert?.url || ""; $("#d-notes").value = d?.notes || "";
@@ -1291,7 +1340,7 @@ function exportIcs() {
   const ev = items.map((d) => {
     const day = d.due_date.replace(/-/g, ""), next = new Date(Date.parse(d.due_date + "T00:00:00Z") + 86400000).toISOString().slice(0, 10).replace(/-/g, "");
     const rr = { monthly: "FREQ=MONTHLY", quarterly: "FREQ=MONTHLY;INTERVAL=3", yearly: "FREQ=YEARLY" }[d.recurrence];
-    const desc = [DL_KIND[d.kind], d.authority, d.regulation, d.notes, d.url].filter(Boolean).join("\n");
+    const desc = [DL_KIND[d.kind], d.area, d.authority, d.regulation, d.owner_label && `Responsabile: ${d.owner_label}`, d.notes, d.url].filter(Boolean).join("\n");
     return ["BEGIN:VEVENT", `UID:regalert-${d.id}@regalert`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${day}`, `DTEND;VALUE=DATE:${next}`,
       fold(`SUMMARY:${tx((d._type === "alert" ? "Triage: " : "") + d.title)}`), fold(`DESCRIPTION:${tx(desc)}`), rr ? `RRULE:${rr}` : "",
       "BEGIN:VALARM", "ACTION:DISPLAY", `TRIGGER:-P${d.remind_days ?? 7}D`, fold(`DESCRIPTION:${tx(d.title)}`), "END:VALARM", "END:VEVENT"].filter(Boolean).join("\r\n");
@@ -1309,6 +1358,315 @@ function gotoAlert(id) {
   store.set("ra_tab", tab); clearFiltersSilently(); go("alerts"); select(Number(id));
 }
 function clearFiltersSilently() { ["#f-authority", "#f-tag", "#f-priority", "#q"].forEach((s) => ($(s).value = "")); $("#f-mine").setAttribute("aria-pressed", "false"); }
+
+// ---------------------------------------------------------------- importazione calendario controlli
+const IMP_FIELDS = [
+  { k: "title", label: "Controllo / attività", req: true, hints: ["controllo", "attivita", "titolo", "nome controllo", "nome", "adempimento", "oggetto", "task", "control", "activity", "summary", "verifica"] },
+  { k: "due_date", label: "Data (prossima scadenza)", req: true, hints: ["prossima scadenza", "scadenza", "data", "entro", "termine", "due date", "deadline", "date", "dtstart", "quando"] },
+  { k: "recurrence", label: "Frequenza", hints: ["frequenza", "periodicita", "ricorrenza", "cadenza", "frequency", "periodicity", "rrule"] },
+  { k: "owner", label: "Responsabile", hints: ["responsabile", "owner", "assegnatario", "esecutore", "incaricato", "referente", "funzione"] },
+  { k: "area", label: "Area / ambito", hints: ["area", "ambito", "processo", "categoria", "tema", "perimetro", "categories"] },
+  { k: "regulation", label: "Riferimento normativo", hints: ["riferimento normativo", "normativa", "riferimento", "norma", "fonte", "regulation", "articolo"] },
+  { k: "notes", label: "Note / modalità", hints: ["note", "descrizione", "modalita", "dettaglio", "evidenze", "description", "notes"] },
+  { k: "kind", label: "Tipo", hints: ["tipo", "tipologia", "type"] },
+  { k: "remind_days", label: "Preavviso (giorni)", hints: ["preavviso", "giorni prima", "reminder", "alert giorni"] },
+];
+const norm = (t) => String(t ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]+/g, " ").replace(/\s+/g, " ").trim();
+const MESI = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
+const isoOf = (y, m, d) => { const dt = new Date(Date.UTC(y, m - 1, d)); return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d ? dt.toISOString().slice(0, 10) : null; };
+function parseDateAny(v) {
+  if (v == null || v === "") return null;
+  if (v instanceof Date && !isNaN(v)) return isoOf(v.getFullYear(), v.getMonth() + 1, v.getDate());
+  if (typeof v === "number") return v > 20000 && v < 80000 ? new Date(Math.round((v - 25569) * 86400000)).toISOString().slice(0, 10) : null;
+  const t = String(v).trim();
+  let m;
+  if ((m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return isoOf(+m[1], +m[2], +m[3]);
+  if ((m = t.match(/^(\d{4})(\d{2})(\d{2})(T|$)/))) return isoOf(+m[1], +m[2], +m[3]);
+  if ((m = t.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})$/))) return isoOf(m[3].length === 2 ? 2000 + +m[3] : +m[3], +m[2], +m[1]);
+  if ((m = norm(t).match(/^(\d{1,2}) ([a-z]+) (\d{4})$/))) { const i = MESI.findIndex((x) => x.startsWith(m[2].slice(0, 3))); if (i >= 0) return isoOf(+m[3], i + 1, +m[1]); }
+  if (/^\d{5}$/.test(t)) return parseDateAny(Number(t));
+  return null;
+}
+function parseRec(v) {
+  const t = norm(v);
+  if (!t) return { rec: "none" };
+  if (/settiman|weekly|freq weekly/.test(t)) return { rec: "weekly" };
+  if (/semestr|semi ?annual|half ?year|ogni 6 mesi|interval 6/.test(t)) return { rec: "semiannual" };
+  if (/trimestr|quarter|ogni 3 mesi|interval 3/.test(t)) return { rec: "quarterly" };
+  if (/mensil|monthly|ogni mese|freq monthly/.test(t)) return { rec: "monthly" };
+  if (/annual|annuo|annua|yearly|ogni anno|freq yearly/.test(t)) return { rec: "yearly" };
+  if (/una tantum|one ?off|singol|nessun|^no$|^n a$|^na$|^-$/.test(t)) return { rec: "none" };
+  return { rec: "none", warn: `frequenza "${String(v).slice(0, 30)}" non riconosciuta: importata come non ricorrente` };
+}
+function parseKind(v, def) {
+  const t = norm(v);
+  if (!t) return def;
+  if (/controll|verific|control|test|monitor/.test(t)) return "control";
+  if (/segnalaz|report|invio/.test(t)) return "reporting";
+  if (/consultaz|consultation/.test(t)) return "consultation";
+  if (/normativ|regulat|entrata in vigore/.test(t)) return "regulatory";
+  if (/intern|internal/.test(t)) return "internal";
+  return def;
+}
+const addRec = (iso, rec, n = 1) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (rec === "weekly") return new Date(Date.UTC(y, m - 1, d + 7 * n)).toISOString().slice(0, 10);
+  const months = { monthly: 1, quarterly: 3, semiannual: 6, yearly: 12 }[rec] * n;
+  const last = new Date(Date.UTC(y, m - 1 + months + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(y, m - 1 + months, Math.min(d, last))).toISOString().slice(0, 10);
+};
+
+function parseCsv(text) {
+  const first = text.split(/\r?\n/).find((l) => l.trim()) || "";
+  const delim = [";", "\t", ","].map((c) => [c, first.split(c).length]).sort((a, b) => b[1] - a[1])[0][0];
+  const rows = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; } else cell += c; }
+    else if (c === '"') q = true;
+    else if (c === delim) { row.push(cell); cell = ""; }
+    else if (c === "\n" || c === "\r") { if (c === "\r" && text[i + 1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+function parseIcs(text) {
+  const lines = text.replace(/\r\n[ \t]/g, "").replace(/\n[ \t]/g, "").split(/\r?\n/);
+  const out = [["Titolo", "Data", "Frequenza", "Note", "Area"]]; let ev = null;
+  const un = (s) => s.replace(/\\n/gi, "\n").replace(/\\([,;\\])/g, "$1");
+  for (const l of lines) {
+    if (l === "BEGIN:VEVENT") ev = {};
+    else if (l === "END:VEVENT" && ev) { out.push([ev.SUMMARY || "", ev.DTSTART || "", ev.RRULE || "", ev.DESCRIPTION || "", ev.CATEGORIES || ""]); ev = null; }
+    else if (ev) { const i = l.indexOf(":"); if (i > 0) { const k = l.slice(0, i).split(";")[0].toUpperCase(); if (!(k in ev)) ev[k] = un(l.slice(i + 1)); } }
+  }
+  return out;
+}
+function rruleToText(r) {
+  const f = (r.match(/FREQ=(\w+)/) || [])[1], n = Number((r.match(/INTERVAL=(\d+)/) || [])[1] || 1);
+  if (f === "MONTHLY") return n === 3 ? "trimestrale" : n === 6 ? "semestrale" : n === 12 ? "annuale" : n === 1 ? "mensile" : r;
+  if (f === "WEEKLY" && n === 1) return "settimanale";
+  if (f === "YEARLY" && n === 1) return "annuale";
+  return r;
+}
+
+const imp = { step: 1, file: null, sheets: null, sheet: null, rows: [], headerRow: 0, map: {}, defKind: "control", advance: true, items: [], batch: null };
+
+function impSteps() {
+  const st = ["File", "Colonne", "Verifica", "Fatto"];
+  $("#imp-steps").innerHTML = st.map((l, i) => `<span class="${i + 1 === imp.step ? "on" : i + 1 < imp.step ? "ok" : ""}"><i>${i + 1 < imp.step ? "✓" : i + 1}</i>${l}</span>`).join(`<span aria-hidden="true">›</span>`);
+}
+function openImport() {
+  Object.assign(imp, { step: 1, file: null, sheets: null, sheet: null, rows: [], headerRow: 0, map: {}, items: [], batch: null });
+  renderImp(); $("#dlg-imp").showModal();
+}
+function renderImp() {
+  impSteps();
+  const B = $("#imp-body"), F = $("#imp-foot");
+  if (imp.step === 1) {
+    B.innerHTML = `
+      <div class="drop" id="imp-drop" tabindex="0" role="button" aria-label="Scegli il file del calendario">${icon("sheet")}<b>Trascina qui il file o clicca per sceglierlo</b>
+        <span class="hint">Excel (.xlsx, .xls), CSV o calendario (.ics). Una riga per controllo, con almeno nome e data.</span></div>
+      <div class="grid2">
+        <div class="field"><label for="imp-kind">Tipo da assegnare alle righe</label><select id="imp-kind">${Object.entries(DL_KIND).map(([k, v]) => `<option value="${k}" ${k === imp.defKind ? "selected" : ""}>${v}</option>`).join("")}</select><span class="hint">Se il file ha una colonna "Tipo", vale quella.</span></div>
+        <div class="field"><label>&nbsp;</label><label class="switch"><input type="checkbox" id="imp-adv" ${imp.advance ? "checked" : ""}><span><b style="font-weight:500">Porta i controlli ricorrenti alla prossima data futura</b><br><span class="hint">Se il piano riporta la prima esecuzione dell'anno, RegAlert calcola la prossima.</span></span></label></div>
+      </div>
+      <div class="test-out">Non hai un file pronto? <a href="#" id="imp-tpl">Scarica il modello CSV</a> con le colonne previste: Controllo, Area, Riferimento normativo, Frequenza, Prossima scadenza, Responsabile, Note.</div>`;
+    F.innerHTML = `<button class="btn" data-close-imp>Annulla</button>`;
+    const drop = $("#imp-drop");
+    drop.onclick = () => $("#imp-file").click();
+    drop.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); $("#imp-file").click(); } };
+    drop.ondragover = (e) => { e.preventDefault(); drop.classList.add("over"); };
+    drop.ondragleave = () => drop.classList.remove("over");
+    drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove("over"); if (e.dataTransfer.files[0]) readImpFile(e.dataTransfer.files[0]); };
+    $("#imp-kind").onchange = (e) => (imp.defKind = e.target.value);
+    $("#imp-adv").onchange = (e) => (imp.advance = e.target.checked);
+    $("#imp-tpl").onclick = (e) => { e.preventDefault(); downloadTemplate(); };
+  }
+  if (imp.step === 2) {
+    const hdr = imp.rows[imp.headerRow] || [];
+    const sample = (ci) => imp.rows.slice(imp.headerRow + 1).map((r) => r[ci]).find((x) => String(x ?? "").trim()) ?? "";
+    const showSample = (ci) => { const v = sample(ci); return v instanceof Date ? v.toLocaleDateString("it-IT") : String(v); };
+    B.innerHTML = `
+      <div class="imp-sum"><span>${icon("sheet").replace("<svg", '<svg style="width:16px;height:16px;vertical-align:-3px"')} <b>${esc(imp.file.name)}</b></span>
+        ${imp.sheets && imp.sheets.length > 1 ? `<span class="field" style="display:flex;gap:6px;align-items:center">Foglio <select id="imp-sheet" style="width:auto">${imp.sheets.map((n) => `<option ${n === imp.sheet ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></span>` : ""}
+        <span class="field" style="display:flex;gap:6px;align-items:center">Intestazioni alla riga <select id="imp-hdr" style="width:auto">${imp.rows.slice(0, 15).map((r, i) => r.some((x) => String(x ?? "").trim()) ? `<option value="${i}" ${i === imp.headerRow ? "selected" : ""}>${i + 1}</option>` : "").join("")}</select></span>
+        <span class="muted">${imp.rows.slice(imp.headerRow + 1).filter((r) => r.some((x) => String(x ?? "").trim())).length} righe di dati</span></div>
+      <p class="hint" style="margin:0">Ho abbinato le colonne del file ai campi dello scadenziario. Controlla e correggi se serve: gli esempi sotto ogni campo vengono dalla prima riga compilata.</p>
+      <div class="map">${IMP_FIELDS.map((f) => `<div class="field"><label for="map-${f.k}">${f.label}${f.req ? ' <span style="color:var(--crit)">*</span>' : ""}</label>
+        <select id="map-${f.k}" data-map="${f.k}"><option value="">— non presente —</option>${hdr.map((h, i) => `<option value="${i}" ${imp.map[f.k] === i ? "selected" : ""}>${esc(String(h || `Colonna ${i + 1}`))}</option>`).join("")}</select>
+        <span class="sample">${imp.map[f.k] != null ? "es. " + esc((f.k === "due_date" ? (parseDateAny(sample(imp.map[f.k])) ? fullDate(parseDateAny(sample(imp.map[f.k])) + "T12:00:00Z", false) : showSample(imp.map[f.k]) + " (non leggibile)") : showSample(imp.map[f.k])).slice(0, 60)) : "&nbsp;"}</span></div>`).join("")}</div>`;
+    F.innerHTML = `<button class="btn" id="imp-back">Indietro</button><button class="btn primary" id="imp-next">Verifica le righe</button>`;
+    $$("[data-map]").forEach((s) => (s.onchange = () => { imp.map[s.dataset.map] = s.value === "" ? null : Number(s.value); renderImp(); }));
+    $("#imp-hdr").onchange = (e) => { imp.headerRow = Number(e.target.value); autoMap(); renderImp(); };
+    if ($("#imp-sheet")) $("#imp-sheet").onchange = (e) => { loadSheet(e.target.value); renderImp(); };
+    $("#imp-back").onclick = () => { imp.step = 1; renderImp(); };
+    $("#imp-next").onclick = () => {
+      if (imp.map.title == null || imp.map.due_date == null) return toast("Indica almeno le colonne del controllo e della data.", { bad: true });
+      buildItems(); imp.step = 3; renderImp();
+    };
+  }
+  if (imp.step === 3) {
+    const ok = imp.items.filter((r) => r.include && !r.err).length, err = imp.items.filter((r) => r.err).length, dup = imp.items.filter((r) => r.dup).length, warn = imp.items.filter((r) => r.include && !r.err && r.warns.length).length;
+    B.innerHTML = `
+      <div class="imp-sum"><span><b style="color:var(--ok)">${ok}</b> da importare</span>${warn ? `<span><b style="color:var(--warn)">${warn}</b> con avvisi</span>` : ""}${err ? `<span><b style="color:var(--crit)">${err}</b> con errori (correggi o escludi)</span>` : ""}${dup ? `<span><b>${dup}</b> già presenti, escluse</span>` : ""}
+        <label style="margin-left:auto;display:flex;gap:6px;align-items:center"><input type="checkbox" id="imp-only-err" style="width:auto"> Mostra solo righe da sistemare</label></div>
+      <div class="prev-wrap"><table class="prev"><thead><tr><th></th><th>Stato</th><th>Controllo</th><th>Data</th><th>Frequenza</th><th>Tipo</th><th>Responsabile</th><th>Area</th></tr></thead><tbody id="imp-rows"></tbody></table></div>`;
+    renderImpRows();
+    F.innerHTML = `<button class="btn" id="imp-back">Indietro</button><button class="btn primary" id="imp-go" ${ok ? "" : "disabled"}>Importa ${ok} ${ok === 1 ? "scadenza" : "scadenze"}</button>`;
+    $("#imp-only-err").onchange = renderImpRows;
+    $("#imp-back").onclick = () => { imp.step = 2; renderImp(); };
+    $("#imp-go").onclick = runImport;
+  }
+  if (imp.step === 4) {
+    B.innerHTML = `<div class="empty" style="padding:28px 12px">${icon("check").replace("<svg", '<svg style="color:var(--ok)"')}<h3>${imp.done} ${imp.done === 1 ? "scadenza importata" : "scadenze importate"}</h3>
+      <p>Le trovi nello scadenziario. I controlli ricorrenti, quando li completi, generano da soli la scadenza successiva. Se qualcosa non torna puoi annullare l'intera importazione.</p></div>`;
+    F.innerHTML = `<button class="btn danger" id="imp-undo" style="margin-right:auto">Annulla questa importazione</button><button class="btn primary" data-close-imp>Vai allo scadenziario</button>`;
+    $("#imp-undo").onclick = undoImport;
+  }
+}
+
+async function readImpFile(file) {
+  imp.file = file;
+  const name = file.name.toLowerCase();
+  try {
+    if (/\.(csv|txt)$/.test(name)) { imp.sheets = null; imp.rows = parseCsv(await file.text()); }
+    else if (/\.ics$/.test(name)) {
+      imp.sheets = null; imp.rows = parseIcs(await file.text());
+      imp.rows = imp.rows.map((r, i) => i ? [r[0], r[1], r[2] && /FREQ=/.test(r[2]) ? rruleToText(r[2]) : r[2], r[3], r[4]] : r);
+    } else {
+      if (!window.XLSX) throw new Error("il lettore Excel non è ancora caricato: riprova tra un attimo");
+      // date lette come numero seriale e convertite in UTC: evita lo slittamento di un giorno dovuto ai fusi orari
+      imp.wb = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false });
+      imp.sheets = imp.wb.SheetNames; loadSheet(imp.sheets[0]);
+    }
+    if (imp.rows.filter((r) => r.some((x) => String(x).trim())).length < 2) throw new Error("il file non contiene righe di dati");
+    if (!imp.wb || /\.(csv|txt|ics)$/.test(name)) detectHeader();
+    autoMap(); imp.step = 2; renderImp();
+  } catch (e) { toast("Non riesco a leggere il file: " + e.message, { bad: true }); }
+}
+function loadSheet(n) {
+  imp.sheet = n;
+  // righe vuote conservate: i numeri di riga mostrati coincidono con quelli del foglio
+  imp.rows = XLSX.utils.sheet_to_json(imp.wb.Sheets[n], { header: 1, raw: true, defval: "", blankrows: true });
+  detectHeader(); autoMap();
+}
+function detectHeader() {
+  const all = IMP_FIELDS.flatMap((f) => f.hints);
+  let best = 0, score = -1;
+  imp.rows.slice(0, 15).forEach((r, i) => {
+    const sc = r.filter((c) => typeof c === "string" && all.some((h) => norm(c).includes(h))).length;
+    if (sc > score) { score = sc; best = i; }
+  });
+  imp.headerRow = best;
+}
+function autoMap() {
+  const hdr = (imp.rows[imp.headerRow] || []).map(norm);
+  const used = new Set(); imp.map = {};
+  for (const f of IMP_FIELDS) {
+    let bi = null, bs = 0;
+    hdr.forEach((h, i) => {
+      if (used.has(i) || !h) return;
+      for (const [rank, hint] of f.hints.entries()) {
+        const s = h === hint ? 100 - rank : h.startsWith(hint) ? 60 - rank : h.includes(hint) ? 40 - rank : 0;
+        if (s > bs) { bs = s; bi = i; }
+      }
+    });
+    if (bi != null) { imp.map[f.k] = bi; used.add(bi); }
+  }
+  if (imp.map.title == null && imp.map.notes != null) { imp.map.title = imp.map.notes; imp.map.notes = null; }
+}
+function matchOwner(t) {
+  const n = norm(t); if (!n) return { assignee: null, owner_label: null };
+  const p = profiles.filter((x) => x.role !== "pending").find((x) => norm(x.full_name) === n || norm(x.email) === n || norm(x.email.split("@")[0]) === n.replace(/ /g, "."));
+  return p ? { assignee: p.id, owner_label: null } : { assignee: null, owner_label: String(t).trim().slice(0, 120) };
+}
+function buildItems() {
+  const get = (r, k) => imp.map[k] == null ? "" : r[imp.map[k]];
+  const existing = new Set(deadlines.map((d) => norm(d.title) + "|" + d.due_date));
+  const today = todayKey();
+  imp.items = imp.rows.slice(imp.headerRow + 1).map((r, i) => {
+    if (!r.some((x) => String(x ?? "").trim())) return null;
+    const it = { line: imp.headerRow + i + 2, include: true, warns: [], err: null };
+    it.title = String(get(r, "title") ?? "").trim().slice(0, 300);
+    const rawDate = get(r, "due_date");
+    it.due_date = parseDateAny(rawDate);
+    const rc = parseRec(get(r, "recurrence")); it.recurrence = rc.rec; if (rc.warn) it.warns.push(rc.warn);
+    it.kind = parseKind(get(r, "kind"), imp.defKind);
+    Object.assign(it, matchOwner(get(r, "owner")));
+    it.area = String(get(r, "area") ?? "").trim().slice(0, 80) || null;
+    it.regulation = String(get(r, "regulation") ?? "").trim().slice(0, 200) || null;
+    it.notes = String(get(r, "notes") ?? "").trim().slice(0, 2000) || null;
+    const rd = parseInt(get(r, "remind_days"), 10); it.remind_days = rd >= 0 && rd <= 90 ? rd : (it.recurrence === "weekly" ? 1 : it.recurrence === "monthly" ? 3 : 7);
+    if (it.due_date && it.recurrence !== "none" && imp.advance && it.due_date < today) {
+      let d = it.due_date, n = 0; while (d < today && n < 600) { d = addRec(it.due_date, it.recurrence, ++n); }
+      it.warns.push(`data nel file ${fullDate(it.due_date + "T12:00:00Z", false)}: portata alla prossima, ${fullDate(d + "T12:00:00Z", false)}`); it.due_date = d;
+    } else if (it.due_date && it.due_date < today) it.warns.push("data passata: comparirà tra le scadute");
+    validateItem(it, rawDate);
+    it.dup = !it.err && existing.has(norm(it.title) + "|" + it.due_date);
+    if (it.dup) { it.include = false; it.warns.push("già presente nello scadenziario"); }
+    return it;
+  }).filter((it) => it && (it.title || it.due_date));
+}
+function validateItem(it, rawDate) {
+  it.err = !it.title ? "manca il nome del controllo" : !it.due_date ? (rawDate ? `data "${String(rawDate).slice(0, 20)}" non leggibile` : "manca la data") : null;
+}
+function renderImpRows() {
+  const only = $("#imp-only-err")?.checked;
+  const members = profiles.filter((p) => ["analyst", "admin"].includes(p.role));
+  $("#imp-rows").innerHTML = imp.items.map((it, i) => (only && !it.err && !it.warns.length) ? "" : `<tr class="${it.err ? "bad" : it.include ? "" : "off"}" data-i="${i}">
+    <td><input type="checkbox" data-f="include" ${it.include ? "checked" : ""} ${it.err ? "disabled" : ""} aria-label="Includi riga ${it.line}" style="min-width:0;width:auto"></td>
+    <td class="st ${it.err ? "err" : it.warns.length ? "warn" : "ok"}" title="${esc([it.err, ...it.warns].filter(Boolean).join("\n"))}">riga ${it.line} · ${it.err ? esc(it.err) : it.warns.length ? esc(it.warns[0]) : "ok"}</td>
+    <td class="t"><input data-f="title" value="${esc(it.title)}" aria-label="Controllo"></td>
+    <td><input type="date" data-f="due_date" value="${it.due_date || ""}" aria-label="Data"></td>
+    <td><select data-f="recurrence" aria-label="Frequenza"><option value="none">Una tantum</option>${Object.entries(DL_REC).map(([k, v]) => `<option value="${k}" ${it.recurrence === k ? "selected" : ""}>${v[0].toUpperCase() + v.slice(1)}</option>`).join("")}</select></td>
+    <td><select data-f="kind" aria-label="Tipo">${Object.entries(DL_KIND).map(([k, v]) => `<option value="${k}" ${it.kind === k ? "selected" : ""}>${v}</option>`).join("")}</select></td>
+    <td><select data-f="assignee" aria-label="Responsabile"><option value="">${it.owner_label ? esc(it.owner_label) + " (esterno)" : "Nessuno"}</option>${members.map((p) => `<option value="${p.id}" ${it.assignee === p.id ? "selected" : ""}>${esc(p.full_name || p.email)}</option>`).join("")}</select></td>
+    <td><input data-f="area" value="${esc(it.area || "")}" aria-label="Area" style="min-width:90px"></td>
+  </tr>`).join("");
+}
+function onImpEdit(e) {
+  const tr = e.target.closest("tr[data-i]"); if (!tr) return;
+  const it = imp.items[Number(tr.dataset.i)], f = e.target.dataset.f; if (!f) return;
+  if (f === "include") it.include = e.target.checked;
+  else if (f === "assignee") it.assignee = e.target.value || null;
+  else it[f] = e.target.value.trim() || (f === "area" ? null : "");
+  if (f === "title" || f === "due_date") { const was = !!it.err; validateItem(it, it.due_date); if (was && !it.err) it.include = true; }
+  if (e.type === "change") { const y = $(".prev-wrap").scrollTop; renderImp(); $(".prev-wrap").scrollTop = y; }
+}
+async function runImport() {
+  const rows = imp.items.filter((r) => r.include && !r.err);
+  if (!rows.length) return;
+  imp.batch = "imp-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 6);
+  const btn = $("#imp-go"); btn.disabled = true; btn.innerHTML = `<span class="spin"></span>Importo…`;
+  const payload = rows.map((r) => ({ title: r.title, due_date: r.due_date, kind: r.kind, recurrence: r.recurrence, remind_days: r.remind_days,
+    assignee: r.assignee, owner_label: r.assignee ? null : r.owner_label, area: r.area, regulation: r.regulation, notes: r.notes,
+    status: "open", source: "manual", import_batch: imp.batch }));
+  for (let i = 0; i < payload.length; i += 200) {
+    const { error } = await sb.from("ra_deadlines").insert(payload.slice(i, i + 200));
+    if (error) {
+      await sb.from("ra_deadlines").delete().eq("import_batch", imp.batch);
+      btn.disabled = false; btn.textContent = "Riprova";
+      return toast("Importazione non riuscita, nessuna riga salvata: " + error.message, { bad: true });
+    }
+  }
+  imp.done = payload.length; imp.step = 4; renderImp(); await loadDeadlines();
+}
+async function undoImport() {
+  if (!imp.batch) return;
+  const { error } = await sb.from("ra_deadlines").delete().eq("import_batch", imp.batch).eq("status", "open");
+  if (error) return toast(error.message, { bad: true });
+  toast("Importazione annullata"); $("#dlg-imp").close(); loadDeadlines();
+}
+function downloadTemplate() {
+  const rows = [["Controllo", "Area", "Riferimento normativo", "Frequenza", "Prossima scadenza", "Responsabile", "Note"],
+    ["ESEMPIO - Verifica a campione dell'adeguata verifica della clientela", "AML", "D.Lgs. 231/2007", "Trimestrale", "31/03/2027", "Funzione Compliance", "Cancellare le righe di esempio prima di importare"],
+    ["ESEMPIO - Test del piano di continuità operativa", "DORA", "Reg. (UE) 2022/2554", "Annuale", "30/06/2027", "Funzione IT", ""]];
+  const csv = "﻿" + rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = "regalert-modello-calendario-controlli.csv"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
 
 // ---------------------------------------------------------------- CSV
 function exportCsv() {
@@ -1523,7 +1881,7 @@ $("#b-send-digest").onclick = async () => {
 // ---------------------------------------------------------------- eventi: scadenziario
 $("#dl-v-list").onclick = () => { dlView = "list"; store.set("ra_dl_view", "list"); renderDeadlines(); };
 $("#dl-v-month").onclick = () => { dlView = "month"; store.set("ra_dl_view", "month"); renderDeadlines(); };
-["#dl-f-kind", "#dl-f-auth"].forEach((s) => $(s).addEventListener("change", renderDeadlines));
+["#dl-f-kind", "#dl-f-auth", "#dl-f-area"].forEach((s) => $(s).addEventListener("change", renderDeadlines));
 ["#dl-f-mine", "#dl-f-alerts"].forEach((s) => ($(s).onclick = (e) => { e.currentTarget.setAttribute("aria-pressed", e.currentTarget.getAttribute("aria-pressed") !== "true"); renderDeadlines(); }));
 $("#b-add-dl").onclick = () => openDlForm();
 $("#b-ics").onclick = exportIcs;
@@ -1532,6 +1890,7 @@ $("#f-dl").onsubmit = async (e) => {
   e.preventDefault();
   const row = { title: $("#d-title").value.trim(), due_date: $("#d-date").value, kind: $('input[name="d-kind"]:checked').value,
     assignee: $("#d-assignee").value || null, authority: $("#d-authority").value.trim() || null, regulation: $("#d-reg").value.trim() || null,
+    area: $("#d-area").value.trim() || null, owner_label: $("#d-owner-label").value.trim() || null,
     recurrence: $("#d-rec").value, remind_days: Number($("#d-remind").value), url: $("#d-url").value.trim() || null, notes: $("#d-notes").value.trim() || null,
     alert_id: Number($("#dlg-dl").dataset.alertId) || null };
   if (!row.title || !row.due_date) return toast("Indica cosa scade e la data.", { bad: true });
@@ -1575,6 +1934,13 @@ document.addEventListener("click", async (e) => {
     renderMonth();
   } else if (t.id === "b-dl-from-alert") openDlForm(null, alerts.find((a) => a.id === selectedId));
 });
+
+// ---------------------------------------------------------------- eventi: importazione
+$("#b-import").onclick = openImport;
+$("#imp-file").onchange = (e) => { const f = e.target.files[0]; e.target.value = ""; if (f) readImpFile(f); };
+$("#dlg-imp").addEventListener("click", (e) => { if (e.target.closest("[data-close-imp]")) $("#dlg-imp").close(); });
+$("#imp-body").addEventListener("change", onImpEdit);
+$("#imp-body").addEventListener("input", (e) => { if (e.target.matches('input[data-f="title"], input[data-f="area"]')) onImpEdit(e); });
 
 // aggiorna i tempi relativi ogni minuto
 setInterval(() => { if (me && !$("#v-app").hidden) { renderHealth(); if (!$("#view-alerts").hidden && !dirty) renderAlerts(); } }, 60000);

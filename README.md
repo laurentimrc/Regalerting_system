@@ -10,6 +10,7 @@ Monitoraggio normativo per il team compliance: raccoglie le novità da autorità
 | Fonti iniziali | `supabase/migrations/002_seed_sources.sql` | EBA, ESMA, Banca d'Italia, Consob, UIF |
 | Pianificazione | `supabase/migrations/003_cron.sql` | pg_cron: raccolta ogni 30', avvisi immediati, digest feriale alle 7:40; segreto dei job nel Vault |
 | Permessi | `supabase/migrations/004_hardening.sql` | Funzioni interne non chiamabili via API, utenti anonimi esclusi |
+| Calendario controlli | `supabase/migrations/006_controls.sql` | Tipo Controllo, frequenze settimanale e semestrale, area, funzione responsabile esterna, lotti di importazione |
 | Scadenziario | `supabase/migrations/005_deadlines.sql` | Scadenze normative, segnalazioni, consultazioni e interne; ricorrenze; proposte AI da confermare |
 | Raccolta | `supabase/functions/collect` | Feed RSS/Atom, nuovi link su pagine-elenco, diff del testo di pagine; sintesi AI |
 | Notifiche | `supabase/functions/digest` | Digest giornaliero e avvisi immediati via Resend e Telegram |
@@ -32,7 +33,7 @@ Al primo controllo ogni fonte registra lo stato di partenza senza generare alert
    - `RESEND_API_KEY` e `DIGEST_FROM` (email; opzionali)
    - `TELEGRAM_BOT_TOKEN` (opzionale)
    - `DASHBOARD_URL` (link nel digest; opzionale)
-4. Applicare 003 (sostituendo `__PROJECT_URL__`), 004 e 005.
+4. Applicare 003 (sostituendo `__PROJECT_URL__`), 004, 005 e 006.
 5. Dashboard: `index.html` contiene URL e chiave pubblica del progetto (pensata per stare nel browser; i dati sono protetti dalle policy RLS). È pubblicata con GitHub Pages dal branch `main`.
 6. Registrarsi dalla dashboard: il primo iscritto da RegAlert diventa admin, gli altri restano in attesa finché un admin non assegna un ruolo. Gli utenti di altre app nello stesso progetto non entrano in RegAlert: se accedono dalla dashboard creano solo una richiesta di accesso.
 

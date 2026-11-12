@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
     const days = (d: string) => Math.round((Date.parse(d + "T00:00:00Z") - today.getTime()) / 86400000);
     const horizon = new Date(today.getTime() + 90 * 86400000).toISOString().slice(0, 10);
     const [{ data: dls }, { data: als }, { data: ppl }] = await Promise.all([
-      db.from("ra_deadlines").select("title,due_date,kind,authority,assignee,remind_days").eq("status", "open").lte("due_date", horizon),
+      db.from("ra_deadlines").select("title,due_date,kind,authority,assignee,owner_label,remind_days").eq("status", "open").lte("due_date", horizon),
       db.from("ra_alerts_view").select("title,due_date,source_authority,assignee_name,status").not("due_date", "is", null)
         .not("status", "in", "(closed,not_relevant)").lte("due_date", horizon),
       db.from("ra_profiles").select("id,full_name,email"),
@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
     const nameOf = (id: string | null) => { const p = (ppl ?? []).find((x: { id: string }) => x.id === id); return p ? (p.full_name || p.email) : null; };
     deadlines = [
       ...(dls ?? []).filter((d) => days(d.due_date) <= d.remind_days)
-        .map((d) => ({ title: d.title, due_date: d.due_date, kind: d.kind, authority: d.authority, assignee_name: nameOf(d.assignee), days: days(d.due_date) })),
+        .map((d) => ({ title: d.title, due_date: d.due_date, kind: d.kind, authority: d.authority, assignee_name: nameOf(d.assignee) ?? d.owner_label, days: days(d.due_date) })),
       ...(als ?? []).filter((a) => days(a.due_date) <= 7)
         .map((a) => ({ title: `Triage: ${a.title}`, due_date: a.due_date, kind: "internal", authority: a.source_authority, assignee_name: a.assignee_name, days: days(a.due_date) })),
     ].sort((a, b) => a.days - b.days);
