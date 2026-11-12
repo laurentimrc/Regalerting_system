@@ -4,294 +4,661 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>RegAlert</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%231d5c8a%22/%3E%3Cpath d=%22M9 23V9h8a4 4 0 0 1 0 8h-8m7 0 6 6%22 stroke=%22white%22 stroke-width=%222.5%22 fill=%22none%22/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%23182c4d%22/%3E%3Cpath d=%22M10 22V10h7a4 4 0 0 1 0 8h-7m6 0 5 4%22 stroke=%22%23f2c14e%22 stroke-width=%222.6%22 fill=%22none%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: barra superiore con viste; nella vista Alert elenco a sinistra e scheda di triage a destra (impilati su telefono). */
+/* Layout: barra laterale scura con le viste; a destra barra strumenti e contenuto.
+   Vista Alert = elenco raggruppato per giorno + pannello di lettura; su telefono elenco e dettaglio a pagina intera. */
 :root {
-  --bg: #f4f6f8; --surface: #ffffff; --surface-2: #eef1f5; --line: #d8dee6;
-  --fg: #16202b; --muted: #5b6878; --accent: #1d5c8a; --accent-ink: #ffffff; --accent-soft: #e2edf6;
-  --crit: #b42318; --crit-soft: #fde8e6; --high: #b54708; --high-soft: #fdf0e1;
-  --ok: #1e7a46; --ok-soft: #e3f4ea; --warn: #8a6a00; --warn-soft: #fbf3d5;
-  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-head: "IBM Plex Sans Condensed", "IBM Plex Sans", system-ui, sans-serif;
-  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-  --radius: 6px;
+  --ink: #182c4d;            /* barra laterale */
+  --ink-2: #213a63;
+  --ink-fg: #d7e0ee;
+  --ink-muted: #8ea0bd;
+  --gold: #f2c14e;           /* richiamo istituzionale, usato con parsimonia */
+  --bg: #f4f6f9;
+  --surface: #ffffff;
+  --surface-2: #f0f3f7;
+  --line: #e1e6ee;
+  --line-strong: #cdd5e1;
+  --fg: #172235;
+  --fg-2: #3c4a60;
+  --muted: #6b7a90;
+  --accent: #2456c9;
+  --accent-ink: #ffffff;
+  --accent-soft: #e8eefb;
+  --crit: #c4321f; --crit-soft: #fdecea;
+  --high: #c76a0a; --high-soft: #fdf1e2;
+  --ok: #1f7a4c;   --ok-soft: #e4f4eb;
+  --warn: #8a6a00; --warn-soft: #fbf3d6;
+  --shadow: 0 1px 2px rgba(16, 30, 54, .06), 0 4px 16px rgba(16, 30, 54, .06);
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-head: "Inter Tight", "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+  --r: 8px;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
-  --bg: #0f151c; --surface: #16202a; --surface-2: #1c2834; --line: #2a3846;
-  --fg: #e3e9ef; --muted: #93a2b2; --accent: #6aa9d8; --accent-ink: #0b1620; --accent-soft: #1b3347;
-  --crit: #ff8a7a; --crit-soft: #3a1c19; --high: #f3a86a; --high-soft: #3a2816;
-  --ok: #6fd39b; --ok-soft: #173a27; --warn: #e6c65c; --warn-soft: #36301a; color-scheme: dark; } }
+  --ink: #0d1626; --ink-2: #16233a; --ink-fg: #d7e0ee; --ink-muted: #7f90ab; --gold: #f2c14e;
+  --bg: #0f1724; --surface: #151f30; --surface-2: #1b2739; --line: #263349; --line-strong: #33425c;
+  --fg: #e6ecf5; --fg-2: #c0cad9; --muted: #8b99b0; --accent: #7aa2f7; --accent-ink: #0b1424; --accent-soft: #1d2d4c;
+  --crit: #ff8b7a; --crit-soft: #3b1d1b; --high: #f5a85c; --high-soft: #3a2a17; --ok: #6fd3a0; --ok-soft: #163829; --warn: #e8c766; --warn-soft: #362f1a;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25); color-scheme: dark; } }
 :root[data-theme="dark"] {
-  --bg: #0f151c; --surface: #16202a; --surface-2: #1c2834; --line: #2a3846;
-  --fg: #e3e9ef; --muted: #93a2b2; --accent: #6aa9d8; --accent-ink: #0b1620; --accent-soft: #1b3347;
-  --crit: #ff8a7a; --crit-soft: #3a1c19; --high: #f3a86a; --high-soft: #3a2816;
-  --ok: #6fd39b; --ok-soft: #173a27; --warn: #e6c65c; --warn-soft: #36301a; color-scheme: dark; }
+  --ink: #0d1626; --ink-2: #16233a; --ink-fg: #d7e0ee; --ink-muted: #7f90ab; --gold: #f2c14e;
+  --bg: #0f1724; --surface: #151f30; --surface-2: #1b2739; --line: #263349; --line-strong: #33425c;
+  --fg: #e6ecf5; --fg-2: #c0cad9; --muted: #8b99b0; --accent: #7aa2f7; --accent-ink: #0b1424; --accent-soft: #1d2d4c;
+  --crit: #ff8b7a; --crit-soft: #3b1d1b; --high: #f5a85c; --high-soft: #3a2a17; --ok: #6fd3a0; --ok-soft: #163829; --warn: #e8c766; --warn-soft: #362f1a;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25); color-scheme: dark; }
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
-body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 var(--font-body); }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 var(--font); -webkit-font-smoothing: antialiased; }
 [hidden] { display: none !important; }
-a { color: var(--accent); }
-h1, h2, h3 { font-family: var(--font-head); font-weight: 600; margin: 0; text-wrap: balance; }
-.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3 { font-family: var(--font-head); margin: 0; text-wrap: balance; letter-spacing: -.01em; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: .92em; }
 .muted { color: var(--muted); }
-.label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.eyebrow { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+kbd { font: 11px var(--font-mono); border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; color: var(--muted); background: var(--surface); }
 
-button, .btn { font: inherit; font-weight: 500; border: 1px solid var(--line); background: var(--surface); color: var(--fg);
-  padding: 6px 12px; border-radius: var(--radius); cursor: pointer; }
-button:hover { border-color: var(--accent); }
-button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
-button.ghost { border-color: transparent; background: transparent; }
-button:disabled { opacity: .55; cursor: default; }
-input, select, textarea { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line);
-  border-radius: var(--radius); padding: 6px 8px; width: 100%; min-width: 0; }
-textarea { resize: vertical; min-height: 72px; }
-.field { display: grid; gap: 4px; }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+/* controlli */
+.btn { font: inherit; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line-strong); background: var(--surface);
+  color: var(--fg); padding: 7px 12px; border-radius: var(--r); cursor: pointer; white-space: nowrap; transition: background .12s, border-color .12s; }
+.btn:hover { background: var(--surface-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.06); }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--fg-2); }
+.btn.ghost:hover { background: var(--surface-2); }
+.btn.danger { color: var(--crit); }
+.btn.sm { padding: 4px 9px; font-size: 13px; }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn svg { width: 16px; height: 16px; flex: none; }
+input, select, textarea { font: inherit; color: var(--fg); background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r);
+  padding: 8px 10px; width: 100%; min-width: 0; transition: border-color .12s, box-shadow .12s; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+textarea { resize: vertical; min-height: 84px; line-height: 1.5; }
+.field { display: grid; gap: 6px; }
+.field > label { font-size: 13px; font-weight: 500; color: var(--fg-2); }
+.hint { font-size: 12px; color: var(--muted); }
+.switch { display: flex; align-items: flex-start; gap: 10px; cursor: pointer; }
+.switch input { appearance: none; width: 34px; height: 20px; border-radius: 999px; background: var(--line-strong); border: 0; padding: 0; position: relative; flex: none; margin-top: 1px; cursor: pointer; transition: background .15s; }
+.switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: transform .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+.switch input:checked { background: var(--accent); }
+.switch input:checked::after { transform: translateX(14px); }
 
-/* barra superiore */
-.top { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line);
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-.top-in { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding-block: 10px; }
-.brand { font-family: var(--font-head); font-size: 18px; font-weight: 600; letter-spacing: .01em; display: flex; align-items: baseline; gap: 8px; }
-.brand small { font-family: var(--font-body); font-size: 12px; color: var(--muted); font-weight: 400; }
-nav.tabs { display: flex; gap: 2px; flex-wrap: wrap; }
-nav.tabs button { border: 0; background: none; padding: 6px 10px; color: var(--muted); }
-nav.tabs button[aria-current="page"] { color: var(--fg); box-shadow: inset 0 -2px 0 var(--accent); border-radius: 0; }
-.top .spacer { flex: 1; }
-.who { font-size: 12px; color: var(--muted); }
+/* struttura */
+.app { display: grid; grid-template-columns: 232px minmax(0, 1fr); height: 100%; }
+.side { background: var(--ink); color: var(--ink-fg); display: flex; flex-direction: column; gap: 4px;
+  padding: calc(18px + env(safe-area-inset-top, 0px)) 12px 16px max(12px, env(safe-area-inset-left, 0px)); overflow-y: auto; }
+.logo { display: flex; align-items: center; gap: 10px; padding: 0 8px 18px; }
+.logo-mark { width: 30px; height: 30px; border-radius: 8px; background: var(--ink-2); display: grid; place-items: center; }
+.logo-mark svg { width: 18px; height: 18px; }
+.logo b { font-family: var(--font-head); font-size: 17px; color: #fff; letter-spacing: -.01em; }
+.logo small { display: block; font-size: 11.5px; color: var(--ink-muted); line-height: 1.2; }
+.nav { display: grid; gap: 2px; }
+.nav button { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; color: var(--ink-fg); font: inherit; font-weight: 500;
+  padding: 8px 10px; border-radius: 7px; cursor: pointer; text-align: left; }
+.nav button:hover { background: var(--ink-2); }
+.nav button[aria-current="page"] { background: var(--ink-2); color: #fff; box-shadow: inset 3px 0 0 var(--gold); }
+.nav svg { width: 18px; height: 18px; opacity: .85; flex: none; }
+.nav .count { margin-left: auto; font-size: 12px; font-variant-numeric: tabular-nums; background: rgba(255,255,255,.1); color: #fff; padding: 0 7px; border-radius: 999px; }
+.side-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-muted); padding: 16px 10px 6px; font-weight: 600; }
+.side-health { display: grid; gap: 6px; padding: 0 10px; font-size: 12.5px; color: var(--ink-muted); }
+.side-health .row-h { display: flex; justify-content: space-between; gap: 8px; }
+.side-foot { margin-top: auto; padding: 12px 10px 0; border-top: 1px solid rgba(255,255,255,.08); display: flex; align-items: center; gap: 10px; }
+.avatar { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 600; color: #fff; flex: none; background: var(--accent); }
+.avatar.sm { width: 22px; height: 22px; font-size: 10px; }
+.side-foot .who { min-width: 0; line-height: 1.25; }
+.side-foot .who b { display: block; font-weight: 500; color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.side-foot .who span { font-size: 12px; color: var(--ink-muted); }
+.side-foot button { margin-left: auto; color: var(--ink-muted); border: 0; background: none; cursor: pointer; padding: 6px; border-radius: 6px; }
+.side-foot button:hover { background: var(--ink-2); color: #fff; }
 
-main { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 16px 32px; max-width: 1400px; margin: 0 auto; }
+.main { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.toolbar { display: flex; align-items: center; gap: 12px; padding-block: calc(12px + env(safe-area-inset-top, 0px)) 12px;
+  padding-left: 24px; padding-right: max(24px, env(safe-area-inset-right, 0px)); border-bottom: 1px solid var(--line); background: var(--surface); }
+.toolbar h1 { font-size: 19px; }
+.toolbar .spacer { flex: 1; }
+.menu-btn { display: none; }
+.search { position: relative; width: min(360px, 40vw); }
+.search svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--muted); pointer-events: none; }
+.search input { padding-left: 34px; padding-right: 30px; background: var(--surface-2); border-color: transparent; }
+.search input:focus { background: var(--surface); }
+.search kbd { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); }
+.content { flex: 1; min-height: 0; overflow: auto; }
 
-/* riepilogo */
-.summary { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-.chipbtn { display: flex; align-items: baseline; gap: 8px; padding: 8px 12px; border: 1px solid var(--line); background: var(--surface); border-radius: var(--radius); cursor: pointer; }
-.chipbtn b { font-family: var(--font-mono); font-size: 18px; font-weight: 500; }
-.chipbtn[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); }
+/* inbox */
+.inbox { display: grid; grid-template-columns: minmax(340px, 5fr) minmax(0, 7fr); height: 100%; min-height: 0; }
+.listcol { display: flex; flex-direction: column; min-height: 0; border-right: 1px solid var(--line); background: var(--surface); }
+.tabs { display: flex; gap: 2px; padding: 10px 14px 0; border-bottom: 1px solid var(--line); overflow-x: auto; scrollbar-width: none; }
+.tabs button { border: 0; background: none; font: inherit; font-weight: 500; color: var(--muted); padding: 8px 10px 10px; cursor: pointer; white-space: nowrap;
+  display: flex; gap: 6px; align-items: center; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tabs button:hover { color: var(--fg); }
+.tabs button[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+.tabs .n { font-size: 11.5px; font-variant-numeric: tabular-nums; background: var(--surface-2); color: var(--muted); padding: 0 6px; border-radius: 999px; }
+.tabs button[aria-selected="true"] .n { background: var(--accent-soft); color: var(--accent); }
+.filters { display: flex; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--line); flex-wrap: wrap; align-items: center; }
+.pillselect { position: relative; }
+.pillselect select { appearance: none; width: auto; padding: 4px 26px 4px 10px; border-radius: 999px; font-size: 13px; background: var(--surface-2); border-color: transparent; cursor: pointer; color: var(--fg-2); }
+.pillselect select.on { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+.pillselect::after { content: ""; position: absolute; right: 10px; top: 50%; width: 6px; height: 6px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+.chiptoggle { font: inherit; font-size: 13px; border: 0; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); color: var(--fg-2); cursor: pointer; }
+.chiptoggle[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+.filters .clear { margin-left: auto; font-size: 13px; }
+.list { flex: 1; overflow-y: auto; min-height: 0; }
+.group { position: sticky; top: 0; z-index: 1; background: var(--surface-2); color: var(--muted); font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; padding: 6px 16px; border-bottom: 1px solid var(--line); }
+.item { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); cursor: pointer; position: relative; }
+.item:hover { background: var(--surface-2); }
+.item[aria-selected="true"] { background: var(--accent-soft); }
+.item[aria-selected="true"]::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); }
+.item .body { min-width: 0; display: grid; gap: 4px; }
+.item .top { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+.item .top b { color: var(--fg-2); font-weight: 600; }
+.item .top .time { margin-left: auto; white-space: nowrap; }
+.item .title { font-weight: 500; line-height: 1.38; color: var(--fg); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.item.unread .title { font-weight: 600; }
+.item.unread .auth-badge::after { content: ""; position: absolute; top: -2px; right: -2px; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); border: 2px solid var(--surface); }
+.item .meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 12px; }
+.auth-badge { --fs: 1; width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; font-family: var(--font-head); font-weight: 700; font-size: calc(13px * var(--fs)); letter-spacing: .01em; color: #fff; position: relative; flex: none; overflow: hidden; }
 
-.filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center; }
-.filters > * { width: auto; }
-.filters input[type=search] { flex: 1 1 220px; }
+.tag { font-size: 11.5px; padding: 1px 7px; border-radius: 5px; background: var(--surface-2); color: var(--fg-2); white-space: nowrap; }
+.badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; padding: 1px 8px; border-radius: 999px; white-space: nowrap; background: var(--surface-2); color: var(--fg-2); }
+.badge .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.s-new { color: var(--accent); background: var(--accent-soft); }
+.s-in_review { color: var(--warn); background: var(--warn-soft); }
+.s-action_required { color: var(--crit); background: var(--crit-soft); }
+.s-closed { color: var(--ok); background: var(--ok-soft); }
+.s-not_relevant { color: var(--muted); background: var(--surface-2); }
+.p-critical { color: var(--crit); } .p-high { color: var(--high); } .p-medium { color: var(--muted); } .p-low { color: var(--muted); }
+.r-high { color: var(--crit); background: var(--crit-soft); } .r-medium { color: var(--high); background: var(--high-soft); } .r-low, .r-none { color: var(--muted); }
+.prio { display: inline-flex; gap: 2px; align-items: flex-end; height: 12px; }
+.prio i { width: 3px; border-radius: 1px; background: currentColor; opacity: .25; }
+.prio i:nth-child(1) { height: 5px; } .prio i:nth-child(2) { height: 8px; } .prio i:nth-child(3) { height: 12px; }
+.prio[data-l="1"] i:nth-child(-n+1), .prio[data-l="2"] i:nth-child(-n+2), .prio[data-l="3"] i:nth-child(-n+3) { opacity: 1; }
+.due-soon { color: var(--crit); font-weight: 500; }
 
-.split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 16px; align-items: start; }
-@media (max-width: 900px) { .split { grid-template-columns: 1fr; } }
+/* dettaglio */
+.reader { overflow-y: auto; min-height: 0; background: var(--bg); }
+.reader-in { max-width: 820px; margin: 0 auto; padding: 28px 32px 48px; display: grid; gap: 20px; }
+.back { display: none; }
+.doc-head { display: grid; gap: 10px; }
+.doc-src { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; flex-wrap: wrap; }
+.doc-src .auth-badge { width: 28px; height: 28px; border-radius: 7px; font-size: calc(10.5px * var(--fs)); }
+.doc-head h2 { font-size: 24px; line-height: 1.25; overflow-wrap: anywhere; }
+.doc-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
+.ai { padding: 16px 18px; display: grid; gap: 10px; border-color: color-mix(in srgb, var(--accent) 25%, var(--line)); }
+.ai-h { display: flex; align-items: center; gap: 8px; }
+.ai-h svg { width: 16px; height: 16px; color: var(--accent); }
+.ai p { margin: 0; color: var(--fg-2); }
+.ai .impact { border-top: 1px dashed var(--line-strong); padding-top: 10px; }
+.ai .disc { font-size: 12px; color: var(--muted); }
+.ai-empty { padding: 14px 18px; display: flex; gap: 10px; align-items: center; color: var(--muted); font-size: 13.5px; }
+.ai-empty svg { width: 18px; height: 18px; flex: none; color: var(--accent); }
+.triage { display: grid; grid-template-columns: minmax(0, 1fr); }
+.props { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 1px solid var(--line); }
+.prop { padding: 12px 16px; display: grid; gap: 4px; border-right: 1px solid var(--line); min-width: 0; }
+.prop:last-child { border-right: 0; }
+.prop select, .prop input { border-color: transparent; background: transparent; padding: 4px 6px; margin-left: -6px; font-weight: 500; cursor: pointer; }
+.prop select:hover, .prop input:hover { background: var(--surface-2); }
+.prop select:disabled, .prop input:disabled { cursor: default; background: transparent; }
+.triage-body { padding: 16px; display: grid; gap: 14px; }
+.savebar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--line); background: var(--surface-2); border-radius: 0 0 12px 12px; }
+.savebar .state { font-size: 13px; color: var(--muted); }
+.savebar .state.dirty { color: var(--warn); font-weight: 500; }
+.savebar .spacer { flex: 1; }
+.section-h { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.section-h h3 { font-size: 15px; }
+pre.diff { font: 12.5px/1.6 var(--font-mono); margin: 0; padding: 14px 16px; overflow-x: auto; white-space: pre-wrap; max-height: 300px; }
+pre.diff .add { color: var(--ok); background: var(--ok-soft); display: block; }
+pre.diff .del { color: var(--crit); background: var(--crit-soft); display: block; text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--crit) 40%, transparent); }
+.excerpt { padding: 14px 16px; white-space: pre-wrap; overflow-wrap: anywhere; max-height: 240px; overflow: auto; color: var(--fg-2); }
+.timeline { padding: 6px 16px 12px; display: grid; }
+.ev { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; padding: 8px 0; position: relative; }
+.ev::before { content: ""; position: absolute; left: 10.5px; top: 30px; bottom: -8px; width: 1px; background: var(--line); }
+.ev:last-child::before { display: none; }
+.ev .ic { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--surface-2); color: var(--muted); }
+.ev .ic svg { width: 12px; height: 12px; }
+.ev .txt { font-size: 13.5px; color: var(--fg-2); min-width: 0; overflow-wrap: anywhere; }
+.ev .txt b { color: var(--fg); font-weight: 600; }
+.ev .when { font-size: 12px; color: var(--muted); margin-left: 6px; }
+.ev .quote { margin-top: 4px; padding: 8px 10px; background: var(--surface-2); border-radius: 8px; white-space: pre-wrap; color: var(--fg); }
+.comment-form { display: flex; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.comment-form input { background: var(--surface-2); border-color: transparent; }
 
-.list { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
-.row { display: grid; grid-template-columns: 4px 1fr; cursor: pointer; border-bottom: 1px solid var(--line); }
-.row:last-child { border-bottom: 0; }
-.row:hover { background: var(--surface-2); }
-.row[aria-selected="true"] { background: var(--accent-soft); }
-.row .stripe { background: transparent; }
-.row .stripe.critical { background: var(--crit); } .row .stripe.high { background: var(--high); }
-.row .body { padding: 10px 12px; min-width: 0; display: grid; gap: 4px; }
-.row .meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 12px; color: var(--muted); align-items: center; }
-.row .title { font-weight: 500; overflow-wrap: anywhere; }
-.row.unread .title { font-weight: 600; }
-.empty { padding: 32px 16px; text-align: center; color: var(--muted); }
+.empty { display: grid; place-items: center; text-align: center; gap: 8px; padding: 48px 24px; color: var(--muted); height: 100%; align-content: center; }
+.empty svg { width: 40px; height: 40px; color: var(--line-strong); }
+.empty h3 { color: var(--fg); font-size: 16px; }
+.empty p { margin: 0; max-width: 340px; }
+.shortcuts { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; font-size: 12.5px; margin-top: 8px; }
 
-.pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
-.pill.s-new { color: var(--accent); border-color: var(--accent); }
-.pill.s-in_review { color: var(--warn); background: var(--warn-soft); border-color: transparent; }
-.pill.s-action_required { color: var(--crit); background: var(--crit-soft); border-color: transparent; }
-.pill.s-closed { color: var(--ok); background: var(--ok-soft); border-color: transparent; }
-.pill.s-not_relevant { color: var(--muted); }
-.pill.r-high { color: var(--crit); border-color: var(--crit); } .pill.r-medium { color: var(--high); border-color: var(--high); }
-.tag { font-size: 11px; padding: 0 6px; border-radius: 3px; background: var(--surface-2); color: var(--muted); }
+/* pagine (fonti, team, impostazioni) */
+.page { max-width: 1040px; margin: 0 auto; padding: 24px 32px 48px; display: grid; gap: 20px; }
+.page-h { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.page-h p { margin: 4px 0 0; color: var(--muted); max-width: 620px; }
+.page-h .spacer { flex: 1; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.stat { padding: 14px 16px; display: grid; gap: 2px; }
+.stat b { font-family: var(--font-head); font-size: 24px; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 13px; color: var(--muted); }
+.srcs { display: grid; }
+.src { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.src:last-child { border-bottom: 0; }
+.src .auth-badge { width: 40px; height: 40px; font-size: calc(14px * var(--fs)); }
+.src .name { font-weight: 600; }
+.src .url { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.src .line2 { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+.src .acts { display: flex; gap: 4px; }
+.health { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; }
+.health i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.health.ok { color: var(--ok); } .health.ok i { background: var(--ok); }
+.health.err { color: var(--crit); } .health.err i { background: var(--crit); }
+.health.wait { color: var(--muted); }
+.src .errmsg { grid-column: 2 / -1; font-size: 12.5px; color: var(--crit); background: var(--crit-soft); padding: 6px 10px; border-radius: 6px; overflow-wrap: anywhere; }
+.src.paused { opacity: .6; }
+.panel { padding: 20px; display: grid; gap: 16px; }
+.panel h3 { font-size: 16px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; align-items: start; }
+.members { display: grid; }
+.member { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.member:last-child { border-bottom: 0; }
+.member .avatar { width: 36px; height: 36px; }
+.member .nm { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.member .em { font-size: 12.5px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.member select { width: auto; }
+.pending-box svg { width: 20px; height: 20px; flex: none; }
+.pending-box { padding: 14px 16px; display: flex; gap: 12px; align-items: center; background: var(--warn-soft); color: var(--warn); border-radius: 10px; font-weight: 500; }
+.roles { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+.role { padding: 14px 16px; display: grid; gap: 4px; }
+.role b { font-size: 13.5px; }
+.role span { font-size: 13px; color: var(--muted); }
 
-.detail { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: grid; gap: 16px; min-width: 0; }
-@media (min-width: 901px) { .detail { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 70px); max-height: calc(100vh - 90px); overflow: auto; } }
-.detail h2 { font-size: 20px; line-height: 1.3; overflow-wrap: anywhere; }
-.ai { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 10px 12px; border-radius: 0 var(--radius) var(--radius) 0; display: grid; gap: 6px; }
-pre.diff { font: 12px/1.5 var(--font-mono); background: var(--surface-2); padding: 10px; border-radius: var(--radius); overflow-x: auto; white-space: pre-wrap; margin: 0; max-height: 260px; }
-pre.diff .add { color: var(--ok); } pre.diff .del { color: var(--crit); }
-.excerpt { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 200px; overflow: auto; }
-.timeline { display: grid; gap: 8px; font-size: 13px; }
-.timeline .ev { display: grid; grid-template-columns: 130px 1fr; gap: 8px; }
-@media (max-width: 500px) { .timeline .ev { grid-template-columns: 1fr; gap: 0; } }
-.section { display: grid; gap: 8px; }
-.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+/* dialog */
+dialog { border: 0; border-radius: 14px; padding: 0; width: min(640px, calc(100vw - 32px)); max-height: calc(100vh - 48px); background: var(--surface); color: var(--fg); box-shadow: 0 24px 64px rgba(0,0,0,.3); }
+dialog::backdrop { background: rgba(10, 18, 32, .45); }
+.dlg-h { display: flex; align-items: center; gap: 10px; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+.dlg-h h3 { font-size: 17px; }
+.dlg-h button { margin-left: auto; }
+.dlg-b { padding: 20px; display: grid; gap: 16px; overflow-y: auto; }
+.dlg-f { display: flex; gap: 8px; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid var(--line); background: var(--surface-2); }
+.kinds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.kind { border: 1px solid var(--line-strong); border-radius: 10px; padding: 10px 12px; cursor: pointer; display: grid; gap: 2px; }
+.kind input { position: absolute; opacity: 0; pointer-events: none; }
+.kind b { font-size: 13.5px; }
+.kind span { font-size: 12px; color: var(--muted); line-height: 1.35; }
+.kind:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.kind:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.test-out { font-size: 13px; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); color: var(--fg-2); }
+.test-out.err { background: var(--crit-soft); color: var(--crit); }
+.test-out ul { margin: 6px 0 0; padding-left: 18px; }
+details.adv summary { cursor: pointer; font-size: 13px; font-weight: 500; color: var(--fg-2); }
+details.adv[open] summary { margin-bottom: 12px; }
 
-table.t { width: 100%; border-collapse: collapse; background: var(--surface); }
-table.t th, table.t td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
-table.t th { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; background: var(--surface-2); }
-.tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
-.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); margin-right: 6px; }
-.dot.ok, .dot.changed { background: var(--ok); } .dot.error { background: var(--crit); }
-.err { color: var(--crit); font-size: 12px; overflow-wrap: anywhere; }
+/* accesso */
+.auth-wrap { min-height: 100%; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.auth-hero { background: var(--ink); color: var(--ink-fg); padding: calc(48px + env(safe-area-inset-top, 0px)) 56px 48px max(56px, env(safe-area-inset-left, 0px)); display: flex; flex-direction: column; gap: 28px; position: relative; overflow: hidden; }
+.auth-hero h1 { font-size: 34px; line-height: 1.12; color: #fff; max-width: 460px; }
+.auth-hero h1 em { font-style: normal; color: var(--gold); }
+.auth-hero p { margin: 0; color: var(--ink-muted); max-width: 440px; font-size: 15px; }
+.feed { display: grid; gap: 10px; max-width: 440px; margin-top: auto; }
+.feed div { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: center; background: var(--ink-2); padding: 10px 12px; border-radius: 10px; font-size: 13px; color: var(--ink-fg); }
+.feed .auth-badge { width: 34px; height: 34px; font-size: calc(12px * var(--fs)); }
+.feed small { display: block; color: var(--ink-muted); font-size: 11.5px; }
+.auth-side { display: grid; place-items: center; padding: 40px max(24px, env(safe-area-inset-right, 0px)) 40px 24px; }
+.auth-form { width: 100%; max-width: 380px; display: grid; gap: 16px; }
+.auth-form h2 { font-size: 24px; }
+.auth-form .sub { margin: -8px 0 4px; color: var(--muted); }
+.auth-switch { text-align: center; font-size: 13.5px; color: var(--muted); }
+.auth-switch button { border: 0; background: none; color: var(--accent); font: inherit; font-weight: 500; cursor: pointer; padding: 0; }
+.msg { font-size: 13.5px; padding: 10px 12px; border-radius: 8px; }
+.msg.err { background: var(--crit-soft); color: var(--crit); }
+.msg.ok { background: var(--ok-soft); color: var(--ok); }
 
-.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: grid; gap: 12px; }
-.stack { display: grid; gap: 16px; }
-
-.center { min-height: 100%; display: grid; place-items: center; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px; }
-.auth { width: 100%; max-width: 380px; display: grid; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
-
-.toast { position: fixed; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 10px 14px; border-radius: var(--radius); max-width: min(420px, calc(100vw - 32px)); z-index: 20; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 10px; box-shadow: var(--shadow);
+  max-width: calc(100vw - 32px); z-index: 50; font-weight: 500; display: flex; gap: 10px; align-items: center; }
 .toast.bad { background: var(--crit); color: #fff; }
-@media (prefers-reduced-motion: no-preference) { .toast { animation: up .18s ease-out; } @keyframes up { from { transform: translateY(8px); opacity: .6; } } }
+.spin { width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: no-preference) {
+  .toast { animation: rise .2s ease-out; }
+  @keyframes rise { from { transform: translate(-50%, 8px); opacity: 0; } }
+}
+
+/* telefono e tablet */
+@media (max-width: 1080px) { .inbox { grid-template-columns: minmax(300px, 1fr) minmax(0, 1.3fr); } .props { grid-template-columns: repeat(2, minmax(0, 1fr)); } .prop:nth-child(2) { border-right: 0; } .prop:nth-child(-n+2) { border-bottom: 1px solid var(--line); } }
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side { position: fixed; inset: 0 auto 0 0; width: 260px; z-index: 40; transform: translateX(-100%); transition: transform .2s; visibility: hidden; }
+  .app.nav-open .side { transform: none; visibility: visible; box-shadow: 0 0 40px rgba(0,0,0,.3); }
+  .scrim { position: fixed; inset: 0; background: rgba(10,18,32,.45); z-index: 30; }
+  .menu-btn { display: inline-flex; }
+  .toolbar { padding-left: max(12px, env(safe-area-inset-left, 0px)); padding-right: max(12px, env(safe-area-inset-right, 0px)); gap: 8px; }
+  .toolbar h1 { font-size: 17px; }
+  .search { width: auto; flex: 1; }
+  .search kbd, .collect-label { display: none; }
+  .search input { padding-right: 10px; }
+  .inbox { grid-template-columns: minmax(0, 1fr); }
+  .main:has(.inbox.show-detail) .search { visibility: hidden; }
+  .inbox.show-detail .listcol { display: none; }
+  .inbox:not(.show-detail) .reader { display: none; }
+  .listcol { border-right: 0; }
+  .reader-in { padding: 16px max(16px, env(safe-area-inset-right, 0px)) 40px max(16px, env(safe-area-inset-left, 0px)); }
+  .back { display: inline-flex; justify-self: start; }
+  .doc-head h2 { font-size: 20px; }
+  .page { padding: 16px max(16px, env(safe-area-inset-right, 0px)) 40px max(16px, env(safe-area-inset-left, 0px)); }
+  .auth-wrap { grid-template-columns: 1fr; }
+  .auth-hero { padding: calc(28px + env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) 28px max(20px, env(safe-area-inset-left, 0px)); gap: 14px; }
+  .auth-hero h1 { font-size: 24px; }
+  .feed { display: none; }
+  .kinds { grid-template-columns: 1fr; }
+  .src { grid-template-columns: 36px minmax(0, 1fr); }
+  .src .acts { grid-column: 2; }
+  .shortcuts { display: none; }
+}
+@media (max-width: 520px) { .props { grid-template-columns: 1fr 1fr; } .member { grid-template-columns: 36px minmax(0, 1fr); } .member select, .member .role-txt { grid-column: 2; justify-self: start; } }
 </style>
 </head>
 <body>
 
-<!-- configurazione (solo se il file non ha già URL e chiave) -->
-<div id="v-config" class="center" hidden>
-  <form class="auth" id="f-config">
-    <h1>RegAlert</h1>
-    <p class="muted">Collega la dashboard al progetto Supabase. I valori sono in Project Settings → API.</p>
-    <div class="field"><label class="label" for="cfg-url">URL del progetto</label><input id="cfg-url" required placeholder="https://xxxx.supabase.co"></div>
-    <div class="field"><label class="label" for="cfg-key">Chiave pubblica (anon / publishable)</label><input id="cfg-key" required></div>
-    <button class="primary">Collega</button>
+<!-- SVG riutilizzati -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-inbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13h4l2 3h4l2-3h4"/><path d="M5.5 5h13L21 13v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z"/></symbol>
+  <symbol id="i-radar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="M12 12 18 6"/></symbol>
+  <symbol id="i-team" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c2 .7 3 2.8 3 6"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 17l-5-5 5-5M5 12h11"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.9 5.6L19.5 9.5l-5.6 1.9L12 17l-1.9-5.6L4.5 9.5l5.6-1.9zM19 15l.9 2.6L22.5 18.5l-2.6.9L19 22l-.9-2.6-2.6-.9 2.6-.9z"/></symbol>
+  <symbol id="i-ext" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-dot" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4h11l-1.5 4L16 12H5"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-logo" viewBox="0 0 24 24" fill="none" stroke="#f2c14e" stroke-width="2.4" stroke-linecap="round"><path d="M7 18V6h6a3.5 3.5 0 0 1 0 7H7m5 0 5 5"/></symbol>
+</svg>
+
+<!-- configurazione (solo se mancano URL e chiave) -->
+<div id="v-config" class="auth-side" style="min-height:100%" hidden>
+  <form class="auth-form" id="f-config">
+    <h2>Collega RegAlert</h2>
+    <p class="sub">I valori sono in Supabase, Project Settings → API.</p>
+    <div class="field"><label for="cfg-url">URL del progetto</label><input id="cfg-url" required placeholder="https://xxxx.supabase.co"></div>
+    <div class="field"><label for="cfg-key">Chiave pubblica</label><input id="cfg-key" required></div>
+    <button class="btn primary">Collega</button>
   </form>
 </div>
 
 <!-- accesso -->
-<div id="v-auth" class="center" hidden>
-  <form class="auth" id="f-auth">
-    <div><h1>RegAlert</h1><p class="muted" style="margin:4px 0 0">Monitoraggio normativo per il team compliance</p></div>
-    <div class="field" id="fld-name" hidden><label class="label" for="a-name">Nome e cognome</label><input id="a-name" autocomplete="name"></div>
-    <div class="field"><label class="label" for="a-email">Email</label><input id="a-email" type="email" required autocomplete="email"></div>
-    <div class="field"><label class="label" for="a-pass">Password</label><input id="a-pass" type="password" required minlength="8" autocomplete="current-password"></div>
-    <button class="primary" id="a-submit">Accedi</button>
-    <p class="muted" style="margin:0"><span id="a-switch-text">Non hai un account?</span> <button type="button" class="ghost" id="a-switch" style="padding:0;color:var(--accent)">Registrati</button></p>
-    <p id="a-msg" class="muted" style="margin:0"></p>
-  </form>
+<div id="v-auth" class="auth-wrap" hidden>
+  <section class="auth-hero">
+    <div class="logo" style="padding:0"><div class="logo-mark"><svg><use href="#i-logo"/></svg></div><div><b>RegAlert</b><small>Monitoraggio normativo</small></div></div>
+    <h1>Ogni novità di <em>ESMA, EBA, Banca d'Italia, Consob e UIF</em>, in un'unica coda di lavoro.</h1>
+    <p>RegAlert controlla le fonti ogni 30 minuti, riassume cosa è cambiato e tiene traccia di chi ha valutato cosa, con uno storico pronto per l'audit.</p>
+    <div class="feed" aria-hidden="true">
+      <div><span class="auth-badge" style="background:#0b6e5c">ESMA</span><span>Nuove Q&amp;A su MiCA — prestatori di servizi<small>Esempio · Rilevanza alta</small></span></div>
+      <div><span class="auth-badge" style="background:#1f4fa3">EBA</span><span>Consultazione su RTS Travel Rule<small>Esempio · In valutazione</small></span></div>
+      <div><span class="auth-badge" style="background:#7a3b8f">UIF</span><span>Comunicato su operazioni sospette in cripto-attività<small>Esempio · Azione richiesta</small></span></div>
+    </div>
+  </section>
+  <section class="auth-side">
+    <form class="auth-form" id="f-auth" novalidate>
+      <div><h2 id="a-title">Accedi</h2></div>
+      <p class="sub" id="a-sub">Usa l'account del team compliance.</p>
+      <div class="field" id="fld-name" hidden><label for="a-name">Nome e cognome</label><input id="a-name" autocomplete="name"></div>
+      <div class="field"><label for="a-email">Email</label><input id="a-email" type="email" required autocomplete="email"></div>
+      <div class="field"><label for="a-pass">Password</label><input id="a-pass" type="password" required minlength="8" autocomplete="current-password"><span class="hint" id="a-pass-hint" hidden>Almeno 8 caratteri.</span></div>
+      <div id="a-msg" class="msg" hidden></div>
+      <button class="btn primary" id="a-submit" style="justify-content:center;padding:10px">Accedi</button>
+      <p class="auth-switch"><span id="a-switch-text">Prima volta qui?</span> <button type="button" id="a-switch">Crea un account</button></p>
+    </form>
+  </section>
 </div>
 
-<!-- in attesa di approvazione -->
-<div id="v-pending" class="center" hidden>
-  <div class="auth">
-    <h1>Accesso in attesa</h1>
-    <p>Il tuo account è stato creato. Un amministratore deve assegnarti un ruolo prima che tu possa vedere gli alert.</p>
-    <button id="p-logout">Esci</button>
+<!-- in attesa -->
+<div id="v-pending" class="auth-side" style="min-height:100%" hidden>
+  <div class="auth-form" style="text-align:center;justify-items:center">
+    <div class="logo-mark" style="width:48px;height:48px;background:var(--warn-soft)"><svg style="width:24px;height:24px;color:var(--warn)"><use href="#i-user"/></svg></div>
+    <h2>Richiesta inviata</h2>
+    <p class="sub" style="margin:0">Il tuo account esiste ma non ha ancora un ruolo. Un amministratore di RegAlert deve approvarti dalla sezione Team: poi ricarica questa pagina.</p>
+    <div style="display:flex;gap:8px"><button class="btn" id="p-reload">Ricarica</button><button class="btn ghost" id="p-logout">Esci</button></div>
   </div>
 </div>
 
 <!-- app -->
-<div id="v-app" hidden>
-  <header class="top"><div class="top-in">
-    <div class="brand">RegAlert <small id="org-line">Monitoraggio normativo</small></div>
-    <nav class="tabs" id="tabs">
-      <button data-view="alerts" aria-current="page">Alert</button>
-      <button data-view="sources">Fonti</button>
-      <button data-view="team">Team</button>
-      <button data-view="settings" data-admin>Impostazioni</button>
+<div id="v-app" class="app" hidden>
+  <aside class="side" id="side">
+    <div class="logo"><div class="logo-mark"><svg><use href="#i-logo"/></svg></div><div><b>RegAlert</b><small id="org-line">Monitoraggio normativo</small></div></div>
+    <nav class="nav" id="nav" aria-label="Sezioni">
+      <button data-view="alerts" aria-current="page"><svg><use href="#i-inbox"/></svg>Alert<span class="count" id="nav-count" hidden></span></button>
+      <button data-view="sources"><svg><use href="#i-radar"/></svg>Fonti<span class="count" id="nav-src-err" hidden style="background:var(--crit);"></span></button>
+      <button data-view="team"><svg><use href="#i-team"/></svg>Team<span class="count" id="nav-pending" hidden style="background:var(--gold);color:var(--ink)"></span></button>
+      <button data-view="settings" data-admin><svg><use href="#i-gear"/></svg>Impostazioni</button>
     </nav>
-    <div class="spacer"></div>
-    <button id="b-collect" data-edit title="Controlla subito tutte le fonti">Controlla ora</button>
-    <span class="who" id="who"></span>
-    <button class="ghost" id="b-logout">Esci</button>
-  </div></header>
+    <div class="side-label">Stato monitoraggio</div>
+    <div class="side-health" id="side-health"></div>
+    <div class="side-foot">
+      <div class="avatar" id="me-avatar"></div>
+      <div class="who"><b id="me-name-side"></b><span id="me-role-side"></span></div>
+      <button id="b-logout" title="Esci" aria-label="Esci"><svg width="18" height="18"><use href="#i-logout"/></svg></button>
+    </div>
+  </aside>
+  <div class="scrim" id="scrim" hidden></div>
 
-  <main>
-    <!-- ALERT -->
-    <section id="view-alerts">
-      <div class="summary" id="summary"></div>
-      <div class="filters">
-        <input type="search" id="q" placeholder="Cerca nel titolo o nella sintesi">
-        <select id="f-status" aria-label="Stato"><option value="">Tutti gli stati</option></select>
-        <select id="f-priority" aria-label="Priorità"><option value="">Tutte le priorità</option></select>
-        <select id="f-authority" aria-label="Autorità"><option value="">Tutte le autorità</option></select>
-        <select id="f-tag" aria-label="Tema"><option value="">Tutti i temi</option></select>
-        <label style="display:flex;gap:6px;align-items:center;white-space:nowrap"><input type="checkbox" id="f-mine" style="width:auto"> Assegnati a me</label>
-        <button id="b-export" title="Esporta gli alert filtrati">Esporta CSV</button>
-      </div>
-      <div class="split">
-        <div class="list" id="list"></div>
-        <article class="detail" id="detail"><div class="empty">Seleziona un alert per vederne il dettaglio e fare il triage.</div></article>
-      </div>
-    </section>
+  <div class="main">
+    <header class="toolbar">
+      <button class="btn ghost menu-btn" id="b-menu" aria-label="Apri il menu"><svg><use href="#i-menu"/></svg></button>
+      <h1 id="view-title">Alert</h1>
+      <div class="spacer"></div>
+      <div class="search" id="search-box"><svg><use href="#i-search"/></svg><input type="search" id="q" placeholder="Cerca" aria-label="Cerca negli alert"><kbd>/</kbd></div>
+      <button class="btn" id="b-collect" data-edit title="Controlla subito tutte le fonti"><svg><use href="#i-refresh"/></svg><span class="collect-label">Controlla ora</span></button>
+    </header>
 
-    <!-- FONTI -->
-    <section id="view-sources" hidden class="stack">
-      <div class="actions"><h2 style="font-size:20px">Registro fonti</h2><span class="spacer" style="flex:1"></span><button class="primary" id="b-add-source" data-edit>Aggiungi fonte</button></div>
-      <form class="panel" id="f-source" hidden>
-        <h3 id="src-form-title">Nuova fonte</h3>
-        <div class="field"><label class="label" for="s-url">URL</label>
-          <div class="actions" style="flex-wrap:nowrap"><input id="s-url" required type="url" placeholder="https://"><button type="button" id="b-test">Prova</button></div></div>
-        <div id="test-out" class="muted"></div>
-        <div class="grid2">
-          <div class="field"><label class="label" for="s-name">Nome</label><input id="s-name" required></div>
-          <div class="field"><label class="label" for="s-authority">Autorità</label><input id="s-authority" required list="dl-auth"></div>
-          <div class="field"><label class="label" for="s-jur">Giurisdizione</label><select id="s-jur"><option>EU</option><option>IT</option><option>INT</option></select></div>
-          <div class="field"><label class="label" for="s-kind">Tipo di monitoraggio</label><select id="s-kind">
-            <option value="rss">Feed RSS/Atom</option><option value="links">Nuovi link su pagina-elenco</option><option value="page">Modifiche al testo della pagina</option></select></div>
-          <div class="field"><label class="label" for="s-every">Controlla ogni (ore)</label><input id="s-every" type="number" min="0.5" step="0.5" value="6"></div>
-          <div class="field"><label class="label" for="s-tags">Temi (separati da virgola)</label><input id="s-tags" placeholder="MiCAR, AML"></div>
-          <div class="field"><label class="label" for="s-pattern">Filtro URL dei link (regex, opzionale)</label><input id="s-pattern" class="mono"></div>
-          <div class="field"><label class="label" for="s-selector">Selettore CSS del contenuto (opzionale)</label><input id="s-selector" class="mono" placeholder="main .content"></div>
+    <div class="content">
+      <!-- ALERT -->
+      <section id="view-alerts" class="inbox" style="height:100%">
+        <div class="listcol">
+          <div class="tabs" role="tablist" id="tabs"></div>
+          <div class="filters">
+            <span class="pillselect"><select id="f-authority" aria-label="Autorità"><option value="">Autorità</option></select></span>
+            <span class="pillselect"><select id="f-tag" aria-label="Tema"><option value="">Tema</option></select></span>
+            <span class="pillselect"><select id="f-priority" aria-label="Priorità"><option value="">Priorità</option></select></span>
+            <button class="chiptoggle" id="f-mine" aria-pressed="false">Assegnati a me</button>
+            <button class="btn ghost sm clear" id="f-clear" hidden>Azzera</button>
+          </div>
+          <div class="list" id="list" role="listbox" aria-label="Alert"></div>
+          <div class="filters" style="border-top:1px solid var(--line);border-bottom:0;justify-content:space-between">
+            <span class="hint" id="list-foot"></span>
+            <button class="btn ghost sm" id="b-export"><svg><use href="#i-download"/></svg>Esporta CSV</button>
+          </div>
         </div>
-        <datalist id="dl-auth"><option>ESMA</option><option>EBA</option><option>EIOPA</option><option>Commissione UE</option><option>EUR-Lex</option><option>Banca d'Italia</option><option>Consob</option><option>UIF</option><option>MEF</option><option>FATF/GAFI</option></datalist>
-        <div class="actions"><button class="primary">Salva fonte</button><button type="button" id="b-cancel-source">Annulla</button></div>
-      </form>
-      <div class="tablewrap"><table class="t" id="t-sources"></table></div>
-      <p class="muted" style="margin:0">Al primo controllo ogni fonte registra lo stato attuale senza generare alert: dal giro successivo arrivano solo le novità.</p>
-    </section>
+        <div class="reader" id="reader"></div>
+      </section>
 
-    <!-- TEAM -->
-    <section id="view-team" hidden class="stack">
-      <form class="panel" id="f-me">
-        <h3>Le mie notifiche</h3>
-        <div class="grid2">
-          <div class="field"><label class="label" for="me-name">Nome visualizzato</label><input id="me-name"></div>
-          <div class="field"><label class="label" for="me-tg">Telegram chat ID (opzionale)</label><input id="me-tg" class="mono"></div>
+      <!-- FONTI -->
+      <section id="view-sources" class="page" hidden>
+        <div class="page-h">
+          <div><h2>Fonti monitorate</h2><p>RegAlert legge queste pagine ogni poche ore e crea un alert per ogni novità. Al primo controllo una fonte registra solo lo stato di partenza.</p></div>
+          <div class="spacer"></div>
+          <button class="btn primary" id="b-add-source" data-edit><svg><use href="#i-plus"/></svg>Aggiungi fonte</button>
         </div>
-        <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="me-daily" style="width:auto"> Digest giornaliero via email (giorni lavorativi, mattina)</label>
-        <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="me-instant" style="width:auto"> Avviso immediato per novità ad alta rilevanza o critiche</label>
-        <div class="actions"><button class="primary">Salva preferenze</button></div>
-      </form>
-      <div><h2 style="font-size:20px;margin-bottom:8px">Membri</h2><div class="tablewrap"><table class="t" id="t-team"></table></div></div>
-      <p class="muted" style="margin:0">Ruoli: <b>viewer</b> legge, <b>analyst</b> fa triage e gestisce le fonti, <b>admin</b> approva i membri e configura le notifiche. I nuovi iscritti restano in attesa finché un admin non assegna un ruolo.</p>
-    </section>
+        <div class="stats" id="src-stats"></div>
+        <div class="card srcs" id="src-list"></div>
+      </section>
 
-    <!-- IMPOSTAZIONI -->
-    <section id="view-settings" hidden class="stack">
-      <form class="panel" id="f-settings">
-        <h3>Profilo dell'intermediario</h3>
-        <p class="muted" style="margin:0">L'analisi automatica usa questo testo per stimare la rilevanza di ogni novità. Descrivi licenze, servizi e normative applicabili.</p>
-        <textarea id="set-org" rows="6"></textarea>
-        <div class="field"><label class="label" for="set-extra">Destinatari aggiuntivi del digest (email separate da virgola)</label><input id="set-extra"></div>
-        <div class="actions"><button class="primary">Salva impostazioni</button><button type="button" id="b-preview-digest">Anteprima digest</button><button type="button" id="b-send-digest">Invia digest ora</button></div>
-      </form>
-      <div class="panel" id="digest-preview" hidden></div>
-    </section>
-  </main>
+      <!-- TEAM -->
+      <section id="view-team" class="page" hidden>
+        <div class="page-h"><div><h2>Team</h2><p>Chi vede gli alert, chi li valuta e come riceve le notifiche.</p></div></div>
+        <div id="pending-box"></div>
+        <div class="card members" id="members"></div>
+        <div class="roles">
+          <div class="card role"><b>Viewer</b><span>Legge alert, sintesi e storico.</span></div>
+          <div class="card role"><b>Analyst</b><span>Fa il triage, commenta e gestisce le fonti.</span></div>
+          <div class="card role"><b>Admin</b><span>Approva i membri e configura notifiche e profilo dell'intermediario.</span></div>
+        </div>
+        <form class="card panel" id="f-me">
+          <h3>Le mie notifiche</h3>
+          <div class="grid2">
+            <div class="field"><label for="me-name">Nome visualizzato</label><input id="me-name"></div>
+            <div class="field"><label for="me-tg">Telegram chat ID</label><input id="me-tg" class="mono" placeholder="Facoltativo"><span class="hint">Per ricevere gli avvisi anche su Telegram.</span></div>
+          </div>
+          <label class="switch"><input type="checkbox" id="me-daily"><span><b style="font-weight:500">Digest del mattino</b><br><span class="hint">Riepilogo via email nei giorni lavorativi alle 7:40.</span></span></label>
+          <label class="switch"><input type="checkbox" id="me-instant"><span><b style="font-weight:500">Avvisi immediati</b><br><span class="hint">Solo per novità ad alta rilevanza o con priorità critica.</span></span></label>
+          <div><button class="btn primary">Salva preferenze</button></div>
+        </form>
+      </section>
+
+      <!-- IMPOSTAZIONI -->
+      <section id="view-settings" class="page" hidden>
+        <div class="page-h"><div><h2>Impostazioni</h2><p>Valgono per tutto il team.</p></div></div>
+        <form class="card panel" id="f-settings">
+          <div class="field"><label for="set-org">Profilo dell'intermediario</label>
+            <textarea id="set-org" rows="6"></textarea>
+            <span class="hint">L'analisi automatica usa questo testo per stimare la rilevanza di ogni novità: licenze, servizi prestati, normative applicabili, autorità competenti.</span></div>
+          <div class="field"><label for="set-extra">Destinatari aggiuntivi del digest</label><input id="set-extra" placeholder="nome@azienda.it, altro@azienda.it"><span class="hint">Persone che ricevono il digest senza avere un account.</span></div>
+          <div class="doc-actions"><button class="btn primary">Salva impostazioni</button><button type="button" class="btn" id="b-preview-digest">Anteprima digest</button><button type="button" class="btn" id="b-send-digest">Invia digest ora</button></div>
+        </form>
+        <div class="card" id="digest-preview" hidden style="overflow:hidden"></div>
+      </section>
+    </div>
+  </div>
 </div>
+
+<!-- dialog fonte -->
+<dialog id="dlg-source">
+  <form id="f-source" method="dialog" style="display:flex;flex-direction:column;max-height:calc(100vh - 48px)">
+    <div class="dlg-h"><h3 id="src-form-title">Nuova fonte</h3><button type="button" class="btn ghost sm" id="b-cancel-source" aria-label="Chiudi"><svg><use href="#i-x"/></svg></button></div>
+    <div class="dlg-b">
+      <div class="field"><label for="s-url">Indirizzo della pagina o del feed</label>
+        <div style="display:flex;gap:8px"><input id="s-url" type="url" required placeholder="https://www.esma.europa.eu/press-news/esma-news"><button type="button" class="btn" id="b-test">Prova</button></div>
+        <span class="hint">Con "Prova" RegAlert legge la pagina e suggerisce come monitorarla.</span></div>
+      <div id="test-out" class="test-out" hidden></div>
+      <div class="grid2">
+        <div class="field"><label for="s-authority">Autorità</label><input id="s-authority" required list="dl-auth" placeholder="ESMA"></div>
+        <div class="field"><label for="s-name">Nome della fonte</label><input id="s-name" required placeholder="News"></div>
+      </div>
+      <div class="field"><label>Cosa controllare</label>
+        <div class="kinds">
+          <label class="kind"><input type="radio" name="s-kind" value="links" checked><b>Nuovi link</b><span>Pagine-elenco: news, comunicati, consultazioni.</span></label>
+          <label class="kind"><input type="radio" name="s-kind" value="rss"><b>Feed RSS</b><span>Il feed ufficiale, quando esiste.</span></label>
+          <label class="kind"><input type="radio" name="s-kind" value="page"><b>Testo della pagina</b><span>Q&amp;A e pagine tematiche che cambiano nel tempo.</span></label>
+        </div></div>
+      <div class="grid2">
+        <div class="field"><label for="s-tags">Temi</label><input id="s-tags" placeholder="MiCAR, AML"><span class="hint">Separati da virgola.</span></div>
+        <div class="field"><label for="s-every">Frequenza</label><select id="s-every"><option value="60">Ogni ora</option><option value="180">Ogni 3 ore</option><option value="360" selected>Ogni 6 ore</option><option value="720">Ogni 12 ore</option><option value="1440">Una volta al giorno</option></select></div>
+        <div class="field"><label for="s-jur">Giurisdizione</label><select id="s-jur"><option>EU</option><option>IT</option><option>INT</option></select></div>
+      </div>
+      <details class="adv"><summary>Opzioni avanzate</summary>
+        <div class="grid2">
+          <div class="field"><label for="s-pattern">Filtro sugli indirizzi dei link</label><input id="s-pattern" class="mono" placeholder="/press-news/esma-news/.+"><span class="hint">Espressione regolare: tiene solo i link che la contengono.</span></div>
+          <div class="field"><label for="s-selector">Zona della pagina (selettore CSS)</label><input id="s-selector" class="mono" placeholder="main .content"><span class="hint">Se vuoto, RegAlert usa il contenuto principale.</span></div>
+        </div>
+      </details>
+      <datalist id="dl-auth"><option>ESMA</option><option>EBA</option><option>EIOPA</option><option>Commissione UE</option><option>EUR-Lex</option><option>Banca d'Italia</option><option>Consob</option><option>UIF</option><option>MEF</option><option>FATF/GAFI</option></datalist>
+    </div>
+    <div class="dlg-f"><button type="button" class="btn danger" id="b-delete-source" hidden style="margin-right:auto">Elimina fonte</button><button type="button" class="btn" id="b-cancel-source2">Annulla</button><button class="btn primary" id="b-save-source">Salva fonte</button></div>
+  </form>
+</dialog>
+
+<!-- dialog conferma -->
+<dialog id="dlg-confirm">
+  <div class="dlg-h"><h3 id="cf-title"></h3></div>
+  <div class="dlg-b"><p id="cf-text" style="margin:0"></p></div>
+  <div class="dlg-f"><button class="btn" id="cf-no">Annulla</button><button class="btn primary" id="cf-yes"></button></div>
+</dialog>
 
 <div id="toast" class="toast" role="status" hidden></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
 <script>
-// ---------------------------------------------------------------- configurazione
-// Al deploy questi due valori vengono sostituiti con quelli del progetto.
 const CONFIG = { url: "https://cyyblaqhuevqlcjvtmsm.supabase.co", key: "sb_publishable_8k8LK1arFyuj7jbNL30fsQ_33zES9iB" };
 
-const STATUS = { new: "Nuovo", in_review: "In valutazione", action_required: "Azione richiesta", closed: "Chiuso", not_relevant: "Non pertinente" };
+const STATUS = { new: "Da valutare", in_review: "In valutazione", action_required: "Azione richiesta", closed: "Chiuso", not_relevant: "Non pertinente" };
 const PRIORITY = { critical: "Critica", high: "Alta", medium: "Media", low: "Bassa" };
+const PRIO_LVL = { critical: 3, high: 3, medium: 2, low: 1 };
 const RELEVANCE = { high: "Rilevanza alta", medium: "Rilevanza media", low: "Rilevanza bassa", none: "Non rilevante" };
 const KIND = { rss: "Feed RSS", links: "Nuovi link", page: "Testo pagina" };
 const ROLE = { pending: "In attesa", viewer: "Viewer", analyst: "Analyst", admin: "Admin" };
-const EVENT = { created: "Rilevato", status: "Stato", priority: "Priorità", assignee: "Assegnatario", assessment: "Valutazione d'impatto", actions: "Azioni", due_date: "Scadenza", comment: "Commento" };
+const TABS = [
+  { k: "open", label: "Aperti", test: (a) => !["closed", "not_relevant"].includes(a.status) },
+  { k: "new", label: "Nuovi", test: (a) => a.status === "new" },
+  { k: "in_review", label: "In corso", test: (a) => a.status === "in_review" },
+  { k: "action_required", label: "Da agire", test: (a) => a.status === "action_required" },
+  { k: "done", label: "Archivio", test: (a) => ["closed", "not_relevant"].includes(a.status) },
+];
+const AUTH_COLORS = { "ESMA": "#0b6e5c", "EBA": "#1f4fa3", "EIOPA": "#6b4fb3", "Banca d'Italia": "#9a6a10", "Consob": "#b23a48", "UIF": "#7a3b8f", "EUR-Lex": "#2c5f8a", "Commissione UE": "#2c5f8a" };
+const AUTH_SHORT = { "Banca d'Italia": "BdI", "Consob": "CONSOB", "Commissione UE": "UE", "EUR-Lex": "EUR", "FATF/GAFI": "FATF" };
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const safeUrl = (u) => /^https?:\/\//i.test(u || "") ? u : null;
-const fmtDate = (d, time = true) => d ? new Date(d).toLocaleString("it-IT", { day: "2-digit", month: "short", year: "numeric", ...(time ? { hour: "2-digit", minute: "2-digit" } : {}), timeZone: "Europe/Rome" }) : "—";
+const icon = (id, cls = "") => `<svg class="${cls}"><use href="#i-${id}"/></svg>`;
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+const isOpen = (a) => !["closed", "not_relevant"].includes(a.status);
+
+function hashColor(s) { let h = 0; for (const c of String(s)) h = (h * 31 + c.charCodeAt(0)) % 360; return `hsl(${h} 45% 38%)`; }
+const authColor = (a) => AUTH_COLORS[a] || hashColor(a);
+const authShort = (a) => AUTH_SHORT[a] || String(a || "?").replace(/[^A-Za-z]/g, "").slice(0, 5).toUpperCase();
+const authBadge = (a) => { const t = authShort(a); return `<span class="auth-badge" style="background:${authColor(a)};--fs:${t.length >= 6 ? .58 : t.length === 5 ? .66 : t.length === 4 ? .8 : 1}">${esc(t)}</span>`; };
+const initials = (n) => String(n || "?").split(/[\s@.]+/).filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join("");
+const avatar = (p, cls = "") => `<span class="avatar ${cls}" style="background:${hashColor(p?.email || p?.full_name)}">${esc(initials(p?.full_name || p?.email))}</span>`;
+
+const TZ = "Europe/Rome";
+const dayKey = (d) => new Date(d).toLocaleDateString("sv-SE", { timeZone: TZ });
+function relTime(d) {
+  if (!d) return "—";
+  const s = (Date.now() - new Date(d)) / 1000;
+  if (s < 60) return "ora";
+  if (s < 3600) return `${Math.floor(s / 60)} min fa`;
+  if (s < 86400 && dayKey(d) === dayKey(Date.now())) return new Date(d).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit", timeZone: TZ });
+  if (s < 7 * 86400) return new Date(d).toLocaleDateString("it-IT", { weekday: "short", day: "numeric", timeZone: TZ });
+  return new Date(d).toLocaleDateString("it-IT", { day: "numeric", month: "short", year: "numeric", timeZone: TZ });
+}
+const fullDate = (d, time = true) => d ? new Date(d).toLocaleString("it-IT", { day: "numeric", month: "long", year: "numeric", ...(time ? { hour: "2-digit", minute: "2-digit" } : {}), timeZone: TZ }) : "—";
+function dayLabel(d) {
+  const k = dayKey(d), today = dayKey(Date.now()), yest = dayKey(Date.now() - 86400000);
+  if (k === today) return "Oggi";
+  if (k === yest) return "Ieri";
+  if (Date.now() - new Date(d) < 7 * 86400000) return "Questa settimana";
+  return new Date(d).toLocaleDateString("it-IT", { month: "long", year: "numeric", timeZone: TZ }).replace(/^./, (c) => c.toUpperCase());
+}
+const daysTo = (d) => Math.ceil((new Date(d + "T23:59:59") - Date.now()) / 86400000);
+function dueText(d) { const n = daysTo(d); return n < 0 ? `scaduto da ${-n} g` : n === 0 ? "scade oggi" : n === 1 ? "scade domani" : `scade tra ${n} g`; }
 
 let toastT;
-function toast(msg, bad = false) {
-  const t = $("#toast"); t.textContent = msg; t.className = "toast" + (bad ? " bad" : ""); t.hidden = false;
-  clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), bad ? 6000 : 2800);
+function toast(msg, opts = {}) {
+  const t = $("#toast"); t.className = "toast" + (opts.bad ? " bad" : "");
+  t.innerHTML = (opts.busy ? `<span class="spin"></span>` : opts.bad ? "" : icon("check")) + `<span>${esc(msg)}</span>`;
+  t.querySelector("svg")?.setAttribute("style", "width:16px;height:16px");
+  t.hidden = false; clearTimeout(toastT);
+  if (!opts.busy) toastT = setTimeout(() => (t.hidden = true), opts.bad ? 6000 : 2600);
+}
+function confirmBox(title, text, yes) {
+  return new Promise((res) => {
+    const d = $("#dlg-confirm"); $("#cf-title").textContent = title; $("#cf-text").textContent = text; $("#cf-yes").textContent = yes;
+    const done = (v) => { d.close(); res(v); };
+    $("#cf-yes").onclick = () => done(true); $("#cf-no").onclick = () => done(false); d.oncancel = () => res(false);
+    d.showModal();
+  });
 }
 const show = (id) => ["v-config", "v-auth", "v-pending", "v-app"].forEach((v) => ($("#" + v).hidden = v !== id));
 
 // ---------------------------------------------------------------- stato
-let sb, me, profiles = [], sources = [], alerts = [], selectedId = null, quick = "";
+let sb, me, profiles = [], sources = [], alerts = [], selectedId = null, tab = "open", dirty = false;
+const canEdit = () => ["admin", "analyst"].includes(me?.role);
 
 function resolveConfig() {
   if (!CONFIG.url.startsWith("__")) return CONFIG;
@@ -311,209 +678,316 @@ async function boot() {
 
 async function enter() {
   const { data: { user } } = await sb.auth.getUser();
+  if (!user) { show("v-auth"); return; }
   let { data: prof, error } = await sb.from("ra_profiles").select("*").eq("id", user.id).maybeSingle();
   if (!error && !prof) {
-    // account già esistente nel progetto: crea una richiesta di accesso
     await sb.rpc("ra_join");
     ({ data: prof, error } = await sb.from("ra_profiles").select("*").eq("id", user.id).maybeSingle());
   }
-  if (error || !prof) { show("v-auth"); $("#a-msg").textContent = "Profilo non trovato. Riprova tra qualche secondo."; return; }
+  if (error || !prof) { show("v-auth"); authMsg("Non riesco a caricare il profilo. Riprova tra qualche secondo.", true); return; }
   me = prof;
   if (me.role === "pending") { show("v-pending"); return; }
   show("v-app");
-  $("#who").textContent = `${me.full_name || me.email} · ${ROLE[me.role]}`;
+  $("#me-avatar").outerHTML = avatar(me).replace('class="avatar "', 'class="avatar" id="me-avatar"');
+  $("#me-name-side").textContent = me.full_name || me.email;
+  $("#me-role-side").textContent = ROLE[me.role];
   $$("[data-admin]").forEach((e) => (e.hidden = me.role !== "admin"));
-  $$("[data-edit]").forEach((e) => (e.hidden = !["admin", "analyst"].includes(me.role)));
-  fillSelect("#f-status", STATUS); fillSelect("#f-priority", PRIORITY);
-  await Promise.all([loadProfiles(), loadSources()]);
-  await loadAlerts();
+  $$("[data-edit]").forEach((e) => (e.hidden = !canEdit()));
+  $("#f-priority").innerHTML = `<option value="">Priorità</option>` + Object.entries(PRIORITY).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+  tab = store.get("ra_tab") || "open";
+  await Promise.all([loadProfiles(), loadSources(), loadAlerts(true)]);
   go(location.hash.slice(1) || store.get("ra_view") || "alerts");
   sb.channel("ra-alerts").on("postgres_changes", { event: "*", schema: "public", table: "ra_alerts" }, () => loadAlerts(true)).subscribe();
-}
-
-function fillSelect(sel, map, keep = true) {
-  const s = $(sel); const first = keep ? s.options[0].outerHTML : "";
-  s.innerHTML = first + Object.entries(map).map(([k, v]) => `<option value="${esc(k)}">${esc(v)}</option>`).join("");
 }
 
 function go(view) {
   if (!["alerts", "sources", "team", "settings"].includes(view)) view = "alerts";
   if (view === "settings" && me.role !== "admin") view = "alerts";
-  $$("#tabs button").forEach((b) => b.dataset.view === view ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
+  $$("#nav button").forEach((b) => b.dataset.view === view ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
   ["alerts", "sources", "team", "settings"].forEach((v) => ($("#view-" + v).hidden = v !== view));
+  $("#view-title").textContent = { alerts: "Alert", sources: "Fonti", team: "Team", settings: "Impostazioni" }[view];
+  $("#search-box").hidden = view !== "alerts";
   store.set("ra_view", view);
   if (location.hash.slice(1) !== view) history.replaceState(null, "", "#" + view);
+  closeNav();
+  if (view === "alerts") renderAlerts();
   if (view === "sources") renderSources();
   if (view === "team") renderTeam();
   if (view === "settings") loadSettings();
 }
+const closeNav = () => { $("#v-app").classList.remove("nav-open"); $("#scrim").hidden = true; };
 
 // ---------------------------------------------------------------- dati
 async function loadProfiles() {
   const { data } = await sb.from("ra_profiles").select("*").order("created_at");
   profiles = data || [];
+  const pend = profiles.filter((p) => p.role === "pending").length;
+  $("#nav-pending").hidden = !(pend && me.role === "admin"); $("#nav-pending").textContent = pend;
 }
 async function loadSources() {
   const { data } = await sb.from("ra_sources").select("id,name,authority,jurisdiction,url,kind,link_pattern,css_selector,tags,active,check_every_minutes,last_checked_at,last_status,last_error").order("authority").order("name");
   sources = data || [];
-  const auths = [...new Set(sources.map((s) => s.authority))].sort();
   const cur = $("#f-authority").value;
-  $("#f-authority").innerHTML = `<option value="">Tutte le autorità</option>` + auths.map((a) => `<option>${esc(a)}</option>`).join("");
+  $("#f-authority").innerHTML = `<option value="">Autorità</option>` + [...new Set(sources.map((s) => s.authority))].sort().map((a) => `<option>${esc(a)}</option>`).join("");
   $("#f-authority").value = cur;
+  renderHealth();
 }
 async function loadAlerts(silent = false) {
   const { data, error } = await sb.from("ra_alerts_view")
-    .select("id,source_id,url,title,excerpt,diff,published_at,detected_at,tags,ai_summary,ai_relevance,ai_impact,status,priority,assignee,assignee_name,impact_assessment,actions,due_date,closed_at,source_name,source_authority,jurisdiction")
+    .select("id,source_id,url,title,excerpt,diff,published_at,detected_at,tags,ai_summary,ai_relevance,ai_impact,ai_processed_at,status,priority,assignee,assignee_name,impact_assessment,actions,due_date,closed_at,source_name,source_authority,jurisdiction")
     .order("detected_at", { ascending: false }).limit(1000);
-  if (error) { if (!silent) toast("Impossibile caricare gli alert: " + error.message, true); return; }
+  if (error) { if (!silent) toast("Non riesco a caricare gli alert: " + error.message, { bad: true }); return; }
   alerts = data || [];
-  const tags = [...new Set(alerts.flatMap((a) => a.tags || []))].sort();
   const cur = $("#f-tag").value;
-  $("#f-tag").innerHTML = `<option value="">Tutti i temi</option>` + tags.map((t) => `<option>${esc(t)}</option>`).join("");
+  $("#f-tag").innerHTML = `<option value="">Tema</option>` + [...new Set(alerts.flatMap((a) => a.tags || []))].sort().map((t) => `<option>${esc(t)}</option>`).join("");
   $("#f-tag").value = cur;
-  renderAlerts();
-  if (selectedId && !silent) renderDetail();
+  const open = alerts.filter((a) => a.status === "new").length;
+  $("#nav-count").hidden = !open; $("#nav-count").textContent = open;
+  if (!$("#view-alerts").hidden) { renderAlerts(); if (selectedId && !dirty) renderDetail(); }
+}
+
+function renderHealth() {
+  const active = sources.filter((s) => s.active);
+  const errs = active.filter((s) => s.last_status === "error");
+  const last = active.map((s) => s.last_checked_at).filter(Boolean).sort().at(-1);
+  $("#nav-src-err").hidden = !errs.length; $("#nav-src-err").textContent = errs.length;
+  $("#side-health").innerHTML = `
+    <div class="row-h"><span>Fonti attive</span><b style="color:#fff">${active.length}</b></div>
+    <div class="row-h"><span>Con errori</span><b style="color:${errs.length ? "#ff9d8f" : "#fff"}">${errs.length}</b></div>
+    <div class="row-h"><span>Ultimo controllo</span><b style="color:#fff">${last ? relTime(last) : "mai"}</b></div>`;
 }
 
 // ---------------------------------------------------------------- alert: elenco
-const isOpen = (a) => !["closed", "not_relevant"].includes(a.status);
-const dueSoon = (a) => a.due_date && isOpen(a) && (new Date(a.due_date) - Date.now()) / 86400000 <= 7;
-const QUICK = {
-  open: { label: "Aperti", test: isOpen },
-  new: { label: "Nuovi", test: (a) => a.status === "new" },
-  action_required: { label: "Azione richiesta", test: (a) => a.status === "action_required" },
-  due: { label: "Scadenza entro 7 giorni", test: dueSoon },
-  hot: { label: "Alta rilevanza aperti", test: (a) => isOpen(a) && (a.ai_relevance === "high" || a.priority === "critical") },
-};
-
-function filtered() {
+function filtered(ignoreTab = false) {
   const q = $("#q").value.trim().toLowerCase();
-  const st = $("#f-status").value, pr = $("#f-priority").value, au = $("#f-authority").value, tg = $("#f-tag").value, mine = $("#f-mine").checked;
+  const au = $("#f-authority").value, tg = $("#f-tag").value, pr = $("#f-priority").value, mine = $("#f-mine").getAttribute("aria-pressed") === "true";
+  const t = TABS.find((x) => x.k === tab) || TABS[0];
   return alerts.filter((a) =>
-    (!quick || QUICK[quick].test(a)) &&
-    (!st || a.status === st) && (!pr || a.priority === pr) && (!au || a.source_authority === au) &&
-    (!tg || (a.tags || []).includes(tg)) && (!mine || a.assignee === me.id) &&
-    (!q || `${a.title} ${a.ai_summary || ""} ${a.excerpt || ""}`.toLowerCase().includes(q)));
+    (ignoreTab || t.test(a)) && (!au || a.source_authority === au) && (!tg || (a.tags || []).includes(tg)) && (!pr || a.priority === pr) &&
+    (!mine || a.assignee === me.id) && (!q || `${a.title} ${a.ai_summary || ""} ${a.excerpt || ""} ${a.source_authority}`.toLowerCase().includes(q)));
 }
 
 function renderAlerts() {
-  $("#summary").innerHTML = Object.entries(QUICK).map(([k, v]) =>
-    `<button class="chipbtn" data-quick="${k}" aria-pressed="${quick === k}"><b>${alerts.filter(v.test).length}</b><span>${esc(v.label)}</span></button>`).join("");
+  const base = filtered(true);
+  $("#tabs").innerHTML = TABS.map((t) => `<button role="tab" data-tab="${t.k}" aria-selected="${t.k === tab}">${t.label}<span class="n">${base.filter(t.test).length}</span></button>`).join("");
+  ["#f-authority", "#f-tag", "#f-priority"].forEach((s) => $(s).classList.toggle("on", !!$(s).value));
+  const anyFilter = $("#f-authority").value || $("#f-tag").value || $("#f-priority").value || $("#f-mine").getAttribute("aria-pressed") === "true" || $("#q").value;
+  $("#f-clear").hidden = !anyFilter;
+
   const rows = filtered();
-  $("#list").innerHTML = rows.length ? rows.map((a) => `
-    <div class="row ${a.status === "new" ? "unread" : ""}" data-id="${a.id}" role="button" tabindex="0" aria-selected="${a.id === selectedId}">
-      <div class="stripe ${a.priority}"></div>
-      <div class="body">
-        <div class="meta"><b style="color:var(--fg)">${esc(a.source_authority)}</b><span class="mono">${fmtDate(a.published_at || a.detected_at, false)}</span>
-          <span class="pill s-${a.status}">${STATUS[a.status]}</span>
-          ${a.ai_relevance && a.ai_relevance !== "none" ? `<span class="pill r-${a.ai_relevance}">${RELEVANCE[a.ai_relevance]}</span>` : ""}
-          ${a.due_date && isOpen(a) ? `<span class="mono" ${dueSoon(a) ? 'style="color:var(--crit)"' : ""}>scad. ${fmtDate(a.due_date, false)}</span>` : ""}</div>
-        <div class="title">${esc(a.title)}</div>
-        ${(a.tags || []).length ? `<div class="meta">${a.tags.map((t) => `<span class="tag">${esc(t)}</span>`).join("")}${a.assignee_name ? `<span>· ${esc(a.assignee_name)}</span>` : ""}</div>` : ""}
-      </div>
-    </div>`).join("")
-    : `<div class="empty">${alerts.length ? "Nessun alert corrisponde ai filtri." : "Nessun alert ancora. Al primo controllo le fonti registrano lo stato attuale; le novità arriveranno dai controlli successivi."}</div>`;
+  if (!rows.length) {
+    const none = !alerts.length;
+    $("#list").innerHTML = `<div class="empty">${icon("inbox")}<h3>${none ? "Ancora nessun alert" : anyFilter ? "Nessun risultato" : "Tutto valutato"}</h3><p>${
+      none ? "Le fonti hanno registrato lo stato di partenza. Le novità compariranno qui dai prossimi controlli, ogni 30 minuti."
+      : anyFilter ? "Nessun alert corrisponde ai filtri scelti." : "Non ci sono alert in questa scheda."}</p>${anyFilter ? `<button class="btn sm" data-clear>Azzera i filtri</button>` : ""}</div>`;
+  } else {
+    let html = "", last = "";
+    for (const a of rows) {
+      const g = dayLabel(a.detected_at);
+      if (g !== last) { html += `<div class="group">${g}</div>`; last = g; }
+      html += `<div class="item ${a.status === "new" ? "unread" : ""}" role="option" tabindex="-1" data-id="${a.id}" aria-selected="${a.id === selectedId}">
+        ${authBadge(a.source_authority)}
+        <div class="body">
+          <div class="top"><b>${esc(a.source_authority)}</b><span>${esc(a.source_name.replace(/^.*?—\s*/, ""))}</span><span class="time">${relTime(a.detected_at)}</span></div>
+          <div class="title">${esc(a.title)}</div>
+          <div class="meta">
+            ${a.status !== "new" ? `<span class="badge s-${a.status}"><span class="dot"></span>${STATUS[a.status]}</span>` : ""}
+            ${a.ai_relevance && a.ai_relevance !== "none" && a.ai_relevance !== "low" ? `<span class="badge r-${a.ai_relevance}">${RELEVANCE[a.ai_relevance]}</span>` : ""}
+            ${["critical", "high"].includes(a.priority) ? `<span class="badge p-${a.priority}" style="background:transparent;padding:0"><span class="prio" data-l="3"><i></i><i></i><i></i></span>${PRIORITY[a.priority]}</span>` : ""}
+            ${a.due_date && isOpen(a) ? `<span class="${daysTo(a.due_date) <= 3 ? "due-soon" : "muted"}">${dueText(a.due_date)}</span>` : ""}
+            ${(a.tags || []).slice(0, 3).map((t) => `<span class="tag">${esc(t)}</span>`).join("")}
+            ${a.assignee ? `<span style="margin-left:auto" title="${esc(a.assignee_name || "")}">${avatar(profiles.find((p) => p.id === a.assignee), "sm")}</span>` : ""}
+          </div>
+        </div></div>`;
+    }
+    $("#list").innerHTML = html;
+  }
+  $("#list-foot").textContent = `${rows.length} alert`;
+  if (!selectedId || !rows.some((a) => a.id === selectedId)) {
+    if (!matchMedia("(max-width: 860px)").matches && rows[0] && !dirty) select(rows[0].id, false);
+    else if (!rows.some((a) => a.id === selectedId)) { selectedId = null; renderDetail(); }
+  }
 }
 
-// ---------------------------------------------------------------- alert: dettaglio e triage
-async function renderDetail() {
+async function select(id, focus = true) {
+  if (dirty && id !== selectedId && !(await confirmBox("Modifiche non salvate", "Hai modificato il triage di questo alert senza salvarlo. Vuoi uscire e perdere le modifiche?", "Esci senza salvare"))) return;
+  dirty = false;
+  selectedId = id;
+  $$(".item").forEach((x) => x.setAttribute("aria-selected", Number(x.dataset.id) === id));
+  if (focus) $(`.item[data-id="${id}"]`)?.scrollIntoView({ block: "nearest" });
+  $("#view-alerts").classList.toggle("show-detail", !!id);
+  renderDetail();
+  if (focus && matchMedia("(max-width: 860px)").matches) $(".content").scrollTop = 0;
+}
+
+// ---------------------------------------------------------------- alert: dettaglio
+function renderDetail() {
   const a = alerts.find((x) => x.id === selectedId);
-  const d = $("#detail");
-  if (!a) { d.innerHTML = `<div class="empty">Seleziona un alert per vederne il dettaglio e fare il triage.</div>`; return; }
-  const canEdit = ["admin", "analyst"].includes(me.role);
-  const url = safeUrl(a.url);
+  const r = $("#reader");
+  if (!a) {
+    r.innerHTML = `<div class="empty">${icon("doc")}<h3>Seleziona un alert</h3><p>Qui trovi la sintesi, il testo originale e il triage dell'alert.</p>
+      <div class="shortcuts"><span><kbd>j</kbd> <kbd>k</kbd> scorri</span><span><kbd>/</kbd> cerca</span><span><kbd>t</kbd> prendo in carico</span><span><kbd>o</kbd> apri originale</span></div></div>`;
+    return;
+  }
+  const ed = canEdit(), url = safeUrl(a.url);
   const members = profiles.filter((p) => ["analyst", "admin"].includes(p.role));
-  const diffHtml = a.diff ? a.diff.split("\n").map((l) => `<span class="${l.startsWith("+ ") ? "add" : l.startsWith("- ") ? "del" : ""}">${esc(l)}</span>`).join("\n") : "";
-  d.innerHTML = `
-    <div class="section">
-      <div class="meta muted" style="display:flex;gap:8px;flex-wrap:wrap;font-size:12px">
-        <b style="color:var(--fg)">${esc(a.source_authority)}</b><span>${esc(a.source_name)}</span><span class="mono">#${a.id}</span>
+  const dis = ed ? "" : "disabled";
+  const diffHtml = a.diff ? a.diff.split("\n").map((l) => `<span class="${l.startsWith("+ ") ? "add" : l.startsWith("- ") ? "del" : ""}">${esc(l)}</span>`).join("") : "";
+  const quick = !ed ? "" : a.status === "new"
+    ? `<button class="btn primary" data-quick="take">${icon("user")}Prendo in carico</button><button class="btn" data-quick="nr">Non pertinente</button>`
+    : isOpen(a)
+      ? `${a.assignee !== me.id ? `<button class="btn" data-quick="take">${icon("user")}Assegna a me</button>` : ""}${a.status !== "action_required" ? `<button class="btn" data-quick="action">${icon("flag")}Richiede azione</button>` : ""}<button class="btn" data-quick="close">${icon("check")}Chiudi</button>`
+      : `<button class="btn" data-quick="reopen">Riapri</button>`;
+
+  r.innerHTML = `<div class="reader-in">
+    <button class="btn ghost sm back" id="b-back">${icon("back")}Alert</button>
+    <header class="doc-head">
+      <div class="doc-src">${authBadge(a.source_authority)}<span><b style="color:var(--fg)">${esc(a.source_authority)}</b> · ${esc(a.source_name.replace(/^.*?—\s*/, ""))}</span>
+        <span>·</span><span title="${esc(fullDate(a.detected_at))}">Rilevato ${relTime(a.detected_at)}</span>
+        ${a.published_at ? `<span>·</span><span>Pubblicato il ${fullDate(a.published_at, false)}</span>` : ""}</div>
+      <h2>${esc(a.title)}</h2>
+      <div class="doc-actions">
+        ${url ? `<a class="btn" href="${esc(url)}" target="_blank" rel="noopener">${icon("ext")}Apri l'originale</a>` : ""}
+        ${quick}
+        <span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">${(a.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</span>
       </div>
-      <h2>${url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(a.title)}</a>` : esc(a.title)}</h2>
-      <div class="muted" style="font-size:12px">Pubblicato <span class="mono">${fmtDate(a.published_at)}</span> · Rilevato <span class="mono">${fmtDate(a.detected_at)}</span></div>
-      <div class="actions">${(a.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</div>
-    </div>
-    ${a.ai_summary ? `<div class="ai"><div class="label">Sintesi automatica ${a.ai_relevance ? `· ${esc(RELEVANCE[a.ai_relevance] || a.ai_relevance)}` : ""}</div>
-      <div>${esc(a.ai_summary)}</div>${a.ai_impact ? `<div><span class="label">Possibile impatto</span><br>${esc(a.ai_impact)}</div>` : ""}
-      <div class="muted" style="font-size:12px">Valutazione preliminare generata automaticamente: verificare sul testo ufficiale.</div></div>` : ""}
-    ${diffHtml ? `<div class="section"><div class="label">Modifiche rilevate sulla pagina</div><pre class="diff">${diffHtml}</pre></div>` : ""}
-    ${a.excerpt && !a.diff ? `<div class="section"><div class="label">Estratto</div><div class="excerpt">${esc(a.excerpt)}</div></div>` : ""}
-    <form class="section" id="f-triage">
-      <div class="label">Triage</div>
-      <div class="grid2">
-        <div class="field"><label class="label" for="t-status">Stato</label><select id="t-status" ${canEdit ? "" : "disabled"}>${Object.entries(STATUS).map(([k, v]) => `<option value="${k}" ${a.status === k ? "selected" : ""}>${v}</option>`).join("")}</select></div>
-        <div class="field"><label class="label" for="t-priority">Priorità</label><select id="t-priority" ${canEdit ? "" : "disabled"}>${Object.entries(PRIORITY).map(([k, v]) => `<option value="${k}" ${a.priority === k ? "selected" : ""}>${v}</option>`).join("")}</select></div>
-        <div class="field"><label class="label" for="t-assignee">Responsabile</label><select id="t-assignee" ${canEdit ? "" : "disabled"}><option value="">Nessuno</option>${members.map((p) => `<option value="${p.id}" ${a.assignee === p.id ? "selected" : ""}>${esc(p.full_name || p.email)}</option>`).join("")}</select></div>
-        <div class="field"><label class="label" for="t-due">Scadenza interna</label><input type="date" id="t-due" value="${a.due_date || ""}" ${canEdit ? "" : "disabled"}></div>
+    </header>
+
+    ${a.ai_summary ? `<section class="card ai">
+        <div class="ai-h">${icon("spark")}<span class="eyebrow" style="color:var(--accent)">Sintesi automatica</span>${a.ai_relevance ? `<span class="badge r-${a.ai_relevance}" style="margin-left:auto">${RELEVANCE[a.ai_relevance]}</span>` : ""}</div>
+        <p>${esc(a.ai_summary)}</p>
+        ${a.ai_impact ? `<div class="impact"><div class="eyebrow" style="margin-bottom:4px">Possibile impatto</div><p>${esc(a.ai_impact)}</p></div>` : ""}
+        <div class="disc">Valutazione preliminare generata automaticamente: verifica sempre sul testo ufficiale.</div>
+      </section>`
+      : `<div class="card ai-empty">${icon("spark")}<span>${a.ai_processed_at ? "La sintesi automatica non è riuscita per questo alert: apri l'originale per leggerlo." : "La sintesi automatica arriverà al prossimo controllo, se la chiave Anthropic è configurata."}</span></div>`}
+
+    ${diffHtml ? `<section><div class="section-h"><h3>Cosa è cambiato nella pagina</h3><span class="hint">verde aggiunto · rosso rimosso</span></div><div class="card"><pre class="diff">${diffHtml}</pre></div></section>` : ""}
+    ${a.excerpt && !a.diff ? `<section><div class="section-h"><h3>Estratto</h3></div><div class="card"><div class="excerpt">${esc(a.excerpt)}</div></div></section>` : ""}
+
+    <section>
+      <div class="section-h"><h3>Triage</h3>${ed ? "" : `<span class="hint">Solo lettura: il tuo ruolo è Viewer.</span>`}</div>
+      <form class="card triage" id="f-triage">
+        <div class="props">
+          <div class="prop"><span class="eyebrow">Stato</span><select id="t-status" ${dis}>${Object.entries(STATUS).map(([k, v]) => `<option value="${k}" ${a.status === k ? "selected" : ""}>${v}</option>`).join("")}</select></div>
+          <div class="prop"><span class="eyebrow">Priorità</span><select id="t-priority" ${dis}>${Object.entries(PRIORITY).map(([k, v]) => `<option value="${k}" ${a.priority === k ? "selected" : ""}>${v}</option>`).join("")}</select></div>
+          <div class="prop"><span class="eyebrow">Responsabile</span><select id="t-assignee" ${dis}><option value="">Nessuno</option>${members.map((p) => `<option value="${p.id}" ${a.assignee === p.id ? "selected" : ""}>${esc(p.full_name || p.email)}${p.id === me.id ? " (tu)" : ""}</option>`).join("")}</select></div>
+          <div class="prop"><span class="eyebrow">Scadenza interna</span><input type="date" id="t-due" value="${a.due_date || ""}" ${dis}></div>
+        </div>
+        <div class="triage-body">
+          <div class="field"><label for="t-impact">Valutazione d'impatto</label><textarea id="t-impact" ${dis} placeholder="Quali processi, policy o controlli interni sono toccati? Se non è pertinente, spiega perché.">${esc(a.impact_assessment || "")}</textarea></div>
+          <div class="field"><label for="t-actions">Azioni da intraprendere</label><textarea id="t-actions" ${dis} placeholder="Es. aggiornare la procedura KYC entro il 30/11; informare il CdA.">${esc(a.actions || "")}</textarea></div>
+        </div>
+        ${ed ? `<div class="savebar"><span class="state" id="save-state">Nessuna modifica</span><span class="spacer"></span><button type="button" class="btn ghost sm" id="b-revert" hidden>Annulla modifiche</button><button class="btn primary" id="b-save" disabled>Salva</button></div>` : ""}
+      </form>
+    </section>
+
+    <section>
+      <div class="section-h"><h3>Storico e commenti</h3><span class="hint">registro non modificabile</span></div>
+      <div class="card">
+        ${ed ? `<form class="comment-form" id="f-comment"><input id="c-text" placeholder="Scrivi un commento per il team" aria-label="Commento"><button class="btn">Invia</button></form>` : ""}
+        <div class="timeline" id="timeline"><div class="ev"><span class="ic"></span><span class="txt muted">Caricamento…</span></div></div>
       </div>
-      <div class="field"><label class="label" for="t-impact">Valutazione d'impatto</label><textarea id="t-impact" ${canEdit ? "" : "disabled"} placeholder="Processi, policy o controlli interessati; motivazione se non pertinente">${esc(a.impact_assessment || "")}</textarea></div>
-      <div class="field"><label class="label" for="t-actions">Azioni da intraprendere</label><textarea id="t-actions" ${canEdit ? "" : "disabled"} placeholder="Es. aggiornare la procedura KYC entro…; informare il CdA">${esc(a.actions || "")}</textarea></div>
-      ${canEdit ? `<div class="actions"><button class="primary">Salva triage</button><button type="button" id="b-take">Prendo in carico</button><button type="button" id="b-nr">Non pertinente</button></div>` : ""}
-    </form>
-    <div class="section">
-      <div class="label">Storico e commenti</div>
-      ${canEdit ? `<form class="actions" id="f-comment" style="flex-wrap:nowrap"><input id="c-text" placeholder="Aggiungi un commento"><button>Invia</button></form>` : ""}
-      <div class="timeline" id="timeline"><span class="muted">Caricamento…</span></div>
-    </div>`;
+    </section>
+  </div>`;
   loadTimeline(a.id);
 }
 
+const EV = {
+  created: ["dot", "ha rilevato la novità"], status: ["dot", "ha cambiato lo stato"], priority: ["flag", "ha cambiato la priorità"], assignee: ["user", "ha cambiato il responsabile"],
+  assessment: ["doc", "ha aggiornato la valutazione d'impatto"], actions: ["doc", "ha aggiornato le azioni"], due_date: ["cal", "ha impostato la scadenza"], comment: ["chat", "ha commentato"],
+};
 async function loadTimeline(id) {
   const { data } = await sb.from("ra_alert_events").select("*").eq("alert_id", id).order("created_at", { ascending: false });
-  if (id !== selectedId) return;
-  const name = (uid) => uid ? (profiles.find((p) => p.id === uid)?.full_name || "Utente") : "Sistema";
-  const val = (e, v) => e.action === "status" ? STATUS[v] || v : e.action === "priority" ? PRIORITY[v] || v : v;
-  $("#timeline").innerHTML = (data || []).map((e) => `
-    <div class="ev"><span class="mono muted" style="font-size:12px">${fmtDate(e.created_at)}</span>
-      <div><b>${esc(name(e.actor))}</b> · ${esc(EVENT[e.action] || e.action)}
-        ${e.action === "comment" ? `<div>${esc(e.note)}</div>`
-          : e.action === "created" ? ""
-          : ["assessment", "actions"].includes(e.action) ? `<div class="muted" style="white-space:pre-wrap">${esc(e.to_value || "(rimosso)")}</div>`
-          : `: <span class="muted">${esc(val(e, e.from_value) || "—")}</span> → ${esc(val(e, e.to_value) || "—")}`}</div></div>`).join("") || `<span class="muted">Nessun evento.</span>`;
+  if (id !== selectedId || !$("#timeline")) return;
+  const who = (uid) => uid ? esc(profiles.find((p) => p.id === uid)?.full_name || "Un membro del team") : "RegAlert";
+  const val = (e, v) => esc(e.action === "status" ? STATUS[v] || v : e.action === "priority" ? PRIORITY[v] || v : e.action === "due_date" && v ? fullDate(v, false) : v);
+  $("#timeline").innerHTML = (data || []).map((e) => {
+    const [ic, verb] = EV[e.action] || ["dot", e.action];
+    let extra = "";
+    if (e.action === "comment") extra = `<div class="quote">${esc(e.note)}</div>`;
+    else if (["assessment", "actions"].includes(e.action)) extra = `<div class="quote">${esc(e.to_value || "(testo rimosso)")}</div>`;
+    else if (e.action !== "created") extra = `: <span class="muted">${val(e, e.from_value) || "—"}</span> → <b>${val(e, e.to_value) || "—"}</b>`;
+    return `<div class="ev"><span class="ic">${icon(ic)}</span><div class="txt"><b>${who(e.actor)}</b> ${verb}${extra.startsWith(":") ? extra : ""}<span class="when" title="${esc(fullDate(e.created_at))}">${relTime(e.created_at)}</span>${extra.startsWith(":") ? "" : extra}</div></div>`;
+  }).join("") || `<div class="ev"><span class="ic"></span><span class="txt muted">Nessun evento.</span></div>`;
 }
 
-async function saveTriage(patch) {
+function triageValues() {
+  return { status: $("#t-status").value, priority: $("#t-priority").value, assignee: $("#t-assignee").value || null,
+    due_date: $("#t-due").value || null, impact_assessment: $("#t-impact").value.trim() || null, actions: $("#t-actions").value.trim() || null };
+}
+function markDirty() {
+  const a = alerts.find((x) => x.id === selectedId); if (!a || !$("#b-save")) return;
+  const v = triageValues();
+  dirty = Object.keys(v).some((k) => (v[k] ?? null) !== (a[k] ?? null));
+  $("#b-save").disabled = !dirty; $("#b-revert").hidden = !dirty;
+  $("#save-state").textContent = dirty ? "Modifiche non salvate" : "Nessuna modifica";
+  $("#save-state").classList.toggle("dirty", dirty);
+}
+async function saveTriage(patch, msg = "Triage salvato") {
+  if (patch.status === "not_relevant" && !(patch.impact_assessment ?? $("#t-impact")?.value.trim())) {
+    toast("Per archiviare come non pertinente scrivi il motivo nella valutazione d'impatto: resta nello storico per l'audit.", { bad: true });
+    $("#t-impact")?.focus(); return false;
+  }
   const { error } = await sb.from("ra_alerts").update(patch).eq("id", selectedId);
-  if (error) return toast("Salvataggio non riuscito: " + error.message, true);
-  toast("Triage salvato");
+  if (error) { toast("Salvataggio non riuscito: " + error.message, { bad: true }); return false; }
+  dirty = false; toast(msg);
   await loadAlerts(true); renderDetail();
+  return true;
 }
 
 // ---------------------------------------------------------------- fonti
 function renderSources() {
-  const canEdit = ["admin", "analyst"].includes(me.role);
-  $("#t-sources").innerHTML = `<thead><tr><th>Fonte</th><th>Tipo</th><th>Temi</th><th>Frequenza</th><th>Ultimo controllo</th>${canEdit ? "<th></th>" : ""}</tr></thead><tbody>` +
-    sources.map((s) => `<tr>
-      <td style="min-width:240px"><b>${esc(s.authority)}</b> · ${esc(s.name)} <span class="muted">${esc(s.jurisdiction)}</span><br>
-        <a href="${esc(safeUrl(s.url) || "#")}" target="_blank" rel="noopener" class="mono" style="font-size:12px;overflow-wrap:anywhere">${esc(s.url)}</a></td>
-      <td>${KIND[s.kind]}${s.active ? "" : `<br><span class="pill">In pausa</span>`}</td>
-      <td>${(s.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join(" ")}</td>
-      <td class="mono">${s.check_every_minutes >= 60 ? (s.check_every_minutes / 60) + " h" : s.check_every_minutes + " min"}</td>
-      <td style="min-width:170px"><span class="dot ${s.last_status || ""}"></span><span class="mono">${s.last_checked_at ? fmtDate(s.last_checked_at) : "mai"}</span>
-        ${s.last_status === "error" ? `<div class="err">${esc(s.last_error)}</div>` : ""}</td>
-      ${canEdit ? `<td style="white-space:nowrap"><button data-check="${s.id}">Controlla</button> <button data-edit-src="${s.id}">Modifica</button> <button data-toggle="${s.id}">${s.active ? "Pausa" : "Riattiva"}</button></td>` : ""}
-    </tr>`).join("") + "</tbody>";
+  const ed = canEdit();
+  const active = sources.filter((s) => s.active), errs = active.filter((s) => s.last_status === "error");
+  const week = alerts.filter((a) => Date.now() - new Date(a.detected_at) < 7 * 86400000).length;
+  $("#src-stats").innerHTML = [
+    [active.length, "fonti attive"], [errs.length, "con errori", errs.length ? "var(--crit)" : ""], [week, "novità negli ultimi 7 giorni"],
+    [new Set(active.map((s) => s.authority)).size, "autorità coperte"],
+  ].map(([n, l, c]) => `<div class="card stat"><b style="${c ? `color:${c}` : ""}">${n}</b><span>${l}</span></div>`).join("");
+  $("#src-list").innerHTML = sources.length ? sources.map((s) => {
+    const h = !s.active ? ["wait", "In pausa"] : s.last_status === "error" ? ["err", "Errore"] : s.last_checked_at ? ["ok", "Funziona"] : ["wait", "In attesa del primo controllo"];
+    const every = s.check_every_minutes >= 1440 ? "ogni giorno" : s.check_every_minutes >= 60 ? `ogni ${s.check_every_minutes / 60} h` : `ogni ${s.check_every_minutes} min`;
+    const n = alerts.filter((a) => a.source_id === s.id).length;
+    return `<div class="src ${s.active ? "" : "paused"}">
+      ${authBadge(s.authority)}
+      <div style="min-width:0"><div class="name">${esc(s.authority)} · ${esc(s.name.replace(/^.*?—\s*/, ""))}</div>
+        <a class="url" href="${esc(safeUrl(s.url) || "#")}" target="_blank" rel="noopener">${esc(s.url.replace(/^https?:\/\/(www\.)?/, ""))}</a>
+        <div class="line2"><span class="health ${h[0]}"><i></i>${h[1]}</span><span>${KIND[s.kind]} · ${every}</span><span>Ultimo controllo ${s.last_checked_at ? relTime(s.last_checked_at) : "mai"}</span><span>${n} alert</span>${(s.tags || []).map((t) => `<span class="tag">${esc(t)}</span>`).join("")}</div></div>
+      ${ed ? `<div class="acts"><button class="btn ghost sm" data-check="${s.id}" title="Controlla ora">${icon("refresh")}</button><button class="btn ghost sm" data-toggle="${s.id}">${s.active ? "Pausa" : "Riattiva"}</button><button class="btn sm" data-edit-src="${s.id}">Modifica</button></div>` : ""}
+      ${s.active && s.last_status === "error" ? `<div class="errmsg">${esc(humanError(s.last_error))}</div>` : ""}
+    </div>`;
+  }).join("") : `<div class="empty">${icon("radar")}<h3>Nessuna fonte</h3><p>Aggiungi la prima pagina da monitorare.</p></div>`;
+}
+function humanError(e) {
+  const m = String(e || "");
+  if (/HTTP 404/.test(m)) return "La pagina non esiste più (errore 404): l'autorità potrebbe averla spostata. Aggiorna l'indirizzo.";
+  if (/HTTP 403|HTTP 401/.test(m)) return "Il sito rifiuta l'accesso automatico. Prova un feed RSS o un'altra pagina della stessa autorità.";
+  if (/Timeout/i.test(m)) return "Il sito non ha risposto in tempo. RegAlert riproverà al prossimo controllo.";
+  if (/Nessun link/i.test(m)) return "La pagina non contiene link che corrispondono al filtro: verifica il filtro o il tipo di monitoraggio.";
+  if (/non è un feed/i.test(m)) return "L'indirizzo non è un feed RSS: scegli \"Nuovi link\" o usa l'indirizzo del feed vero.";
+  return m;
 }
 
 let editingSource = null;
+const kindVal = () => $('input[name="s-kind"]:checked').value;
 function openSourceForm(s = null) {
   editingSource = s;
-  $("#f-source").hidden = false; $("#test-out").textContent = "";
   $("#src-form-title").textContent = s ? "Modifica fonte" : "Nuova fonte";
   $("#s-url").value = s?.url || ""; $("#s-name").value = s?.name || ""; $("#s-authority").value = s?.authority || "";
-  $("#s-jur").value = s?.jurisdiction || "EU"; $("#s-kind").value = s?.kind || "links";
-  $("#s-every").value = s ? s.check_every_minutes / 60 : 6; $("#s-tags").value = (s?.tags || []).join(", ");
-  $("#s-pattern").value = s?.link_pattern || ""; $("#s-selector").value = s?.css_selector || "";
-  $("#s-url").focus();
+  $("#s-jur").value = s?.jurisdiction || "EU";
+  $$('input[name="s-kind"]').forEach((r) => (r.checked = r.value === (s?.kind || "links")));
+  const ev = String(s?.check_every_minutes || 360);
+  if (![...$("#s-every").options].some((o) => o.value === ev)) $("#s-every").insertAdjacentHTML("beforeend", `<option value="${ev}">Ogni ${ev} min</option>`);
+  $("#s-every").value = ev;
+  $("#s-tags").value = (s?.tags || []).join(", "); $("#s-pattern").value = s?.link_pattern || ""; $("#s-selector").value = s?.css_selector || "";
+  $(".adv").open = !!(s?.link_pattern || s?.css_selector);
+  $("#test-out").hidden = true; $("#b-delete-source").hidden = !s || me.role !== "admin";
+  $("#dlg-source").showModal(); $("#s-url").focus();
 }
 
 async function callFn(name, body) {
   const { data, error } = await sb.functions.invoke(name, { body });
-  if (error) {
-    let msg = error.message;
-    try { msg = (await error.context.json()).error || msg; } catch {}
-    throw new Error(msg);
-  }
+  if (error) { let msg = error.message; try { msg = (await error.context.json()).error || msg; } catch {} throw new Error(msg); }
   return data;
 }
 
@@ -522,13 +996,16 @@ function renderTeam() {
   $("#me-name").value = me.full_name || ""; $("#me-tg").value = me.telegram_chat_id || "";
   $("#me-daily").checked = me.notify_daily; $("#me-instant").checked = me.notify_instant;
   const admin = me.role === "admin";
-  $("#t-team").innerHTML = `<thead><tr><th>Nome</th><th>Email</th><th>Ruolo</th><th>Notifiche</th><th>Dal</th></tr></thead><tbody>` +
-    profiles.map((p) => `<tr>
-      <td>${esc(p.full_name || "—")}${p.role === "pending" ? ` <span class="pill s-in_review">Da approvare</span>` : ""}</td>
-      <td style="overflow-wrap:anywhere">${esc(p.email)}</td>
-      <td>${admin && p.id !== me.id ? `<select data-role="${p.id}" aria-label="Ruolo di ${esc(p.email)}">${Object.entries(ROLE).map(([k, v]) => `<option value="${k}" ${p.role === k ? "selected" : ""}>${v}</option>`).join("")}</select>` : ROLE[p.role]}</td>
-      <td class="muted">${[p.notify_daily && "digest", p.notify_instant && "immediate", p.telegram_chat_id && "Telegram"].filter(Boolean).join(", ") || "nessuna"}</td>
-      <td class="mono">${fmtDate(p.created_at, false)}</td></tr>`).join("") + "</tbody>";
+  const pend = profiles.filter((p) => p.role === "pending");
+  $("#pending-box").innerHTML = admin && pend.length ? `<div class="pending-box">${icon("user")}<span>${pend.length === 1 ? "1 persona attende" : `${pend.length} persone attendono`} di essere approvata: assegna un ruolo qui sotto.</span></div>` : "";
+  const order = { pending: 0, admin: 1, analyst: 2, viewer: 3 };
+  $("#members").innerHTML = [...profiles].sort((a, b) => order[a.role] - order[b.role]).map((p) => `<div class="member">
+    ${avatar(p)}
+    <div style="min-width:0"><div class="nm">${esc(p.full_name || p.email)}${p.id === me.id ? ' <span class="muted" style="font-weight:400">(tu)</span>' : ""}</div>
+      <div class="em">${esc(p.email)} · ${[p.notify_daily && "digest", p.notify_instant && "avvisi immediati", p.telegram_chat_id && "Telegram"].filter(Boolean).join(", ") || "nessuna notifica"}</div></div>
+    ${admin && p.id !== me.id ? `<select data-role="${p.id}" aria-label="Ruolo di ${esc(p.email)}">${Object.entries(ROLE).map(([k, v]) => `<option value="${k}" ${p.role === k ? "selected" : ""}>${k === "pending" ? "Da approvare" : v}</option>`).join("")}</select>`
+      : `<span class="badge role-txt ${p.role === "pending" ? "s-in_review" : ""}">${ROLE[p.role]}</span>`}
+  </div>`).join("");
 }
 
 // ---------------------------------------------------------------- impostazioni
@@ -550,148 +1027,206 @@ function exportCsv() {
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
   a.download = `regalert-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast(`Esportati ${rows.length} alert`);
 }
 
-// ---------------------------------------------------------------- eventi
+// ---------------------------------------------------------------- eventi: accesso
 let signup = false;
+function authMsg(t, bad) { const m = $("#a-msg"); m.hidden = !t; m.textContent = t || ""; m.className = "msg " + (bad ? "err" : "ok"); }
 $("#a-switch").onclick = () => {
   signup = !signup;
-  $("#fld-name").hidden = !signup; $("#a-submit").textContent = signup ? "Crea account" : "Accedi";
-  $("#a-switch").textContent = signup ? "Accedi" : "Registrati"; $("#a-switch-text").textContent = signup ? "Hai già un account?" : "Non hai un account?";
-  $("#a-pass").autocomplete = signup ? "new-password" : "current-password"; $("#a-msg").textContent = "";
+  $("#fld-name").hidden = !signup; $("#a-pass-hint").hidden = !signup;
+  $("#a-title").textContent = signup ? "Crea il tuo account" : "Accedi";
+  $("#a-sub").textContent = signup ? "Il primo iscritto diventa amministratore; gli altri vengono approvati da lui." : "Usa l'account del team compliance.";
+  $("#a-submit").textContent = signup ? "Crea account" : "Accedi";
+  $("#a-switch").textContent = signup ? "Accedi" : "Crea un account"; $("#a-switch-text").textContent = signup ? "Hai già un account?" : "Prima volta qui?";
+  $("#a-pass").autocomplete = signup ? "new-password" : "current-password"; authMsg("");
 };
 $("#f-auth").onsubmit = async (e) => {
   e.preventDefault();
   const email = $("#a-email").value.trim(), password = $("#a-pass").value;
-  $("#a-submit").disabled = true; $("#a-msg").textContent = "";
+  if (!/^\S+@\S+\.\S+$/.test(email)) return authMsg("Inserisci un indirizzo email valido.", true);
+  if (password.length < 8) return authMsg("La password deve avere almeno 8 caratteri.", true);
+  $("#a-submit").disabled = true; authMsg("");
   const res = signup
     ? await sb.auth.signUp({ email, password, options: { data: { full_name: $("#a-name").value.trim(), app: "regalert" }, emailRedirectTo: location.origin + location.pathname } })
     : await sb.auth.signInWithPassword({ email, password });
   $("#a-submit").disabled = false;
-  if (res.error) { $("#a-msg").textContent = res.error.message === "Invalid login credentials" ? "Email o password non corretti." : res.error.message; return; }
-  if (signup && !res.data.session) { $("#a-msg").textContent = "Controlla la tua email per confermare l'account, poi accedi."; return; }
+  if (res.error) {
+    const m = res.error.message;
+    return authMsg(/Invalid login/i.test(m) ? "Email o password non corretti." : /not confirmed/i.test(m) ? "Conferma prima l'indirizzo email: trovi il link nella posta in arrivo." : /already registered/i.test(m) ? "Esiste già un account con questa email: accedi." : m, true);
+  }
+  if (signup && !res.data.session) return authMsg("Ti abbiamo inviato un'email: conferma l'indirizzo e poi accedi da qui.", false);
   await enter();
 };
 $("#f-config").onsubmit = (e) => { e.preventDefault(); store.set("ra_url", $("#cfg-url").value.trim().replace(/\/$/, "")); store.set("ra_key", $("#cfg-key").value.trim()); boot(); };
 $("#b-logout").onclick = $("#p-logout").onclick = () => sb.auth.signOut();
-$("#tabs").onclick = (e) => { const v = e.target.closest("button")?.dataset.view; if (v) go(v); };
+$("#p-reload").onclick = () => location.reload();
+
+// ---------------------------------------------------------------- eventi: navigazione
+$("#nav").onclick = (e) => { const v = e.target.closest("button")?.dataset.view; if (v) go(v); };
+$("#b-menu").onclick = () => { $("#v-app").classList.add("nav-open"); $("#scrim").hidden = false; };
+$("#scrim").onclick = closeNav;
 window.addEventListener("hashchange", () => me && me.role !== "pending" && go(location.hash.slice(1)));
 
-["#q", "#f-status", "#f-priority", "#f-authority", "#f-tag", "#f-mine"].forEach((s) => $(s).addEventListener("input", renderAlerts));
-$("#summary").onclick = (e) => { const k = e.target.closest("[data-quick]")?.dataset.quick; if (!k) return; quick = quick === k ? "" : k; renderAlerts(); };
-const pick = (e) => { const r = e.target.closest(".row"); if (!r) return; selectedId = Number(r.dataset.id); $$(".row").forEach((x) => x.setAttribute("aria-selected", x === r)); renderDetail();
-  if (matchMedia("(max-width: 900px)").matches) $("#detail").scrollIntoView({ behavior: "smooth" }); };
-$("#list").onclick = pick;
-$("#list").onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick(e); } };
+// ---------------------------------------------------------------- eventi: alert
+$("#q").addEventListener("input", renderAlerts);
+["#f-authority", "#f-tag", "#f-priority"].forEach((s) => $(s).addEventListener("change", renderAlerts));
+$("#f-mine").onclick = (e) => { e.currentTarget.setAttribute("aria-pressed", e.currentTarget.getAttribute("aria-pressed") !== "true"); renderAlerts(); };
+const clearFilters = () => { ["#f-authority", "#f-tag", "#f-priority", "#q"].forEach((s) => ($(s).value = "")); $("#f-mine").setAttribute("aria-pressed", "false"); renderAlerts(); };
+$("#f-clear").onclick = clearFilters;
+$("#tabs").onclick = (e) => { const k = e.target.closest("[data-tab]")?.dataset.tab; if (!k) return; tab = k; store.set("ra_tab", k); renderAlerts(); };
+$("#list").onclick = (e) => { if (e.target.closest("[data-clear]")) return clearFilters(); const it = e.target.closest(".item"); if (it) select(Number(it.dataset.id)); };
 $("#b-export").onclick = exportCsv;
 
-$("#detail").addEventListener("submit", async (e) => {
+$("#reader").addEventListener("input", (e) => { if (e.target.closest("#f-triage")) markDirty(); });
+$("#reader").addEventListener("change", (e) => { if (e.target.closest("#f-triage")) markDirty(); });
+$("#reader").addEventListener("submit", async (e) => {
   e.preventDefault();
-  if (e.target.id === "f-triage") {
-    saveTriage({ status: $("#t-status").value, priority: $("#t-priority").value, assignee: $("#t-assignee").value || null,
-      due_date: $("#t-due").value || null, impact_assessment: $("#t-impact").value.trim() || null, actions: $("#t-actions").value.trim() || null });
-  } else if (e.target.id === "f-comment") {
+  if (e.target.id === "f-triage") saveTriage(triageValues());
+  if (e.target.id === "f-comment") {
     const note = $("#c-text").value.trim(); if (!note) return;
     const { error } = await sb.from("ra_alert_events").insert({ alert_id: selectedId, actor: me.id, action: "comment", note });
-    if (error) return toast("Commento non salvato: " + error.message, true);
+    if (error) return toast("Commento non salvato: " + error.message, { bad: true });
     $("#c-text").value = ""; loadTimeline(selectedId);
   }
 });
-$("#detail").addEventListener("click", (e) => {
-  if (e.target.id === "b-take") saveTriage({ assignee: me.id, status: "in_review" });
-  if (e.target.id === "b-nr") {
-    if (!$("#t-impact").value.trim()) { toast("Scrivi nella valutazione d'impatto perché non è pertinente: resta nello storico per l'audit.", true); $("#t-impact").focus(); return; }
-    saveTriage({ status: "not_relevant", impact_assessment: $("#t-impact").value.trim() });
+$("#reader").addEventListener("click", async (e) => {
+  if (e.target.closest("#b-back")) {
+    if (dirty && !(await confirmBox("Modifiche non salvate", "Vuoi tornare all'elenco senza salvare il triage?", "Torna senza salvare"))) return;
+    dirty = false; selectedId = null; $("#view-alerts").classList.remove("show-detail"); renderAlerts(); return;
   }
+  if (e.target.closest("#b-revert")) { dirty = false; renderDetail(); return; }
+  const q = e.target.closest("[data-quick]")?.dataset.quick; if (!q) return;
+  const cur = triageValues();
+  if (q === "take") saveTriage({ ...cur, assignee: me.id, status: cur.status === "new" ? "in_review" : cur.status }, "Preso in carico");
+  if (q === "action") saveTriage({ ...cur, status: "action_required" }, "Segnato: richiede azione");
+  if (q === "close") saveTriage({ ...cur, status: "closed" }, "Alert chiuso");
+  if (q === "reopen") saveTriage({ ...cur, status: "in_review" }, "Alert riaperto");
+  if (q === "nr") saveTriage({ ...cur, status: "not_relevant" }, "Archiviato come non pertinente");
 });
 
+// scorciatoie da tastiera
+document.addEventListener("keydown", (e) => {
+  if ($("#v-app").hidden || $("#view-alerts").hidden || document.querySelector("dialog[open]")) return;
+  const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName);
+  if (e.key === "Escape" && typing) { document.activeElement.blur(); return; }
+  if (typing || e.metaKey || e.ctrlKey || e.altKey) return;
+  const rows = filtered(), i = rows.findIndex((a) => a.id === selectedId);
+  if (e.key === "/") { e.preventDefault(); $("#q").focus(); }
+  else if (e.key === "j" || e.key === "ArrowDown") { e.preventDefault(); if (rows[i + 1]) select(rows[i + 1].id); }
+  else if (e.key === "k" || e.key === "ArrowUp") { e.preventDefault(); if (rows[i - 1]) select(rows[i - 1].id); }
+  else if (e.key === "o") { const u = safeUrl(alerts.find((a) => a.id === selectedId)?.url); if (u) window.open(u, "_blank", "noopener"); }
+  else if (e.key === "t" && canEdit() && selectedId) $('[data-quick="take"]')?.click();
+});
+window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+
 $("#b-collect").onclick = async () => {
-  const b = $("#b-collect"); b.disabled = true; b.textContent = "Controllo in corso…";
+  const b = $("#b-collect"); b.disabled = true; toast("Controllo delle fonti in corso…", { busy: true });
   try {
     const r = await callFn("collect", { force: true });
     const nuovi = (r.results || []).reduce((n, x) => n + (x.new || 0), 0), errori = (r.results || []).filter((x) => x.error).length;
-    toast(`${r.checked} fonti controllate · ${nuovi} novità${errori ? ` · ${errori} con errore` : ""}`, errori > 0 && !nuovi);
+    toast(`${r.checked} fonti controllate · ${nuovi ? `${nuovi} novità` : "nessuna novità"}${errori ? ` · ${errori} con errore` : ""}`, { bad: errori > 0 && !nuovi });
     await Promise.all([loadSources(), loadAlerts(true)]); if (!$("#view-sources").hidden) renderSources();
-  } catch (err) { toast("Controllo non riuscito: " + err.message, true); }
-  b.disabled = false; b.textContent = "Controlla ora";
+  } catch (err) { toast("Controllo non riuscito: " + err.message, { bad: true }); }
+  b.disabled = false;
 };
 
+// ---------------------------------------------------------------- eventi: fonti
 $("#b-add-source").onclick = () => openSourceForm();
-$("#b-cancel-source").onclick = () => ($("#f-source").hidden = true);
+$("#b-cancel-source").onclick = $("#b-cancel-source2").onclick = () => $("#dlg-source").close();
 $("#b-test").onclick = async () => {
-  const url = $("#s-url").value.trim(); if (!url) return;
-  $("#test-out").textContent = "Provo a leggere la pagina…";
+  const url = $("#s-url").value.trim(); const out = $("#test-out");
+  if (!/^https?:\/\//.test(url)) { out.hidden = false; out.className = "test-out err"; out.textContent = "Inserisci un indirizzo che inizi con https://"; return; }
+  out.hidden = false; out.className = "test-out"; out.innerHTML = `<span class="spin" style="display:inline-block;vertical-align:-2px;margin-right:8px"></span>Leggo la pagina…`;
   try {
     const r = await callFn("collect", { test_url: url });
-    $("#s-kind").value = r.suggested_kind;
-    if (!$("#s-name").value && r.title) $("#s-name").value = r.title.slice(0, 80);
-    $("#test-out").innerHTML = r.suggested_kind === "rss"
-      ? `Feed valido con ${r.items.length} elementi recenti, ad esempio: <i>${esc(r.items[0]?.title || "")}</i>`
-      : `Pagina letta. ${r.discovered_feed ? `La pagina segnala un feed: <span class="mono">${esc(r.discovered_feed)}</span> (conviene usarlo). ` : ""}${r.links.length} link di contenuto trovati${r.links[0] ? `, ad esempio <i>${esc(r.links[0].title)}</i>` : ""}. Tipo suggerito: ${KIND[r.suggested_kind]}.`;
-  } catch (err) { $("#test-out").innerHTML = `<span class="err">Non riesco a leggere l'URL: ${esc(err.message)}</span>`; }
+    $$('input[name="s-kind"]').forEach((x) => (x.checked = x.value === r.suggested_kind));
+    if (!$("#s-name").value && r.title) $("#s-name").value = r.title.split(/\s[-|–]\s/)[0].slice(0, 80);
+    if (r.suggested_kind === "rss") out.innerHTML = `<b>Feed valido</b> con ${r.items.length} elementi recenti, ad esempio:<ul>${r.items.slice(0, 3).map((i) => `<li>${esc(i.title)}</li>`).join("")}</ul>`;
+    else out.innerHTML = `${r.discovered_feed ? `<b>La pagina ha un feed RSS</b>, più affidabile: <a href="#" id="use-feed" class="mono">${esc(r.discovered_feed)}</a><br>` : ""}<b>${r.links.length} link di contenuto</b> trovati${r.links.length ? `, ad esempio:<ul>${r.links.slice(0, 4).map((l) => `<li>${esc(l.title)}</li>`).join("")}</ul>` : "."} Tipo suggerito: <b>${KIND[r.suggested_kind]}</b>.`;
+    $("#use-feed")?.addEventListener("click", (ev) => { ev.preventDefault(); $("#s-url").value = r.discovered_feed; $$('input[name="s-kind"]').forEach((x) => (x.checked = x.value === "rss")); $("#b-test").click(); });
+  } catch (err) { out.className = "test-out err"; out.textContent = "Non riesco a leggere l'indirizzo: " + humanError(err.message); }
 };
 $("#f-source").onsubmit = async (e) => {
   e.preventDefault();
   const row = { url: $("#s-url").value.trim(), name: $("#s-name").value.trim(), authority: $("#s-authority").value.trim(), jurisdiction: $("#s-jur").value,
-    kind: $("#s-kind").value, check_every_minutes: Math.max(30, Math.round(Number($("#s-every").value) * 60)),
-    tags: $("#s-tags").value.split(",").map((t) => t.trim()).filter(Boolean), link_pattern: $("#s-pattern").value.trim() || null, css_selector: $("#s-selector").value.trim() || null };
-  if (row.link_pattern) { try { new RegExp(row.link_pattern); } catch { return toast("Il filtro URL non è un'espressione regolare valida.", true); } }
-  const res = editingSource
-    ? await sb.from("ra_sources").update({ ...row, ...(editingSource.url !== row.url || editingSource.kind !== row.kind ? { last_checked_at: null, last_snapshot: null, last_hash: null } : {}) }).eq("id", editingSource.id)
-    : await sb.from("ra_sources").insert(row);
-  if (res.error) return toast("Fonte non salvata: " + res.error.message, true);
-  toast(editingSource ? "Fonte aggiornata" : "Fonte aggiunta: il primo controllo registra lo stato di partenza");
-  $("#f-source").hidden = true; await loadSources(); renderSources();
+    kind: kindVal(), check_every_minutes: Number($("#s-every").value), tags: $("#s-tags").value.split(",").map((t) => t.trim()).filter(Boolean),
+    link_pattern: $("#s-pattern").value.trim() || null, css_selector: $("#s-selector").value.trim() || null };
+  if (!/^https?:\/\//.test(row.url) || !row.name || !row.authority) return toast("Compila indirizzo, autorità e nome della fonte.", { bad: true });
+  if (row.link_pattern) { try { new RegExp(row.link_pattern); } catch { return toast("Il filtro sugli indirizzi non è un'espressione regolare valida.", { bad: true }); } }
+  const reset = editingSource && (editingSource.url !== row.url || editingSource.kind !== row.kind) ? { last_checked_at: null, last_snapshot: null, last_hash: null, last_status: null, last_error: null } : {};
+  const res = editingSource ? await sb.from("ra_sources").update({ ...row, ...reset }).eq("id", editingSource.id) : await sb.from("ra_sources").insert(row);
+  if (res.error) return toast("Fonte non salvata: " + (/duplicate/.test(res.error.message) ? "questo indirizzo è già monitorato." : res.error.message), { bad: true });
+  $("#dlg-source").close();
+  toast(editingSource ? "Fonte aggiornata" : "Fonte aggiunta: al primo controllo registra lo stato di partenza");
+  await loadSources(); renderSources();
 };
-$("#t-sources").onclick = async (e) => {
+$("#b-delete-source").onclick = async () => {
+  if (!editingSource) return;
+  $("#dlg-source").close();
+  const n = alerts.filter((a) => a.source_id === editingSource.id).length;
+  if (!(await confirmBox("Eliminare la fonte?", `Verranno eliminati anche i ${n} alert collegati e il loro storico. Per smettere di monitorarla conservando lo storico, usa "Pausa".`, "Elimina definitivamente"))) return;
+  const { error } = await sb.from("ra_sources").delete().eq("id", editingSource.id);
+  if (error) return toast(error.message, { bad: true });
+  toast("Fonte eliminata"); await Promise.all([loadSources(), loadAlerts(true)]); renderSources();
+};
+$("#src-list").onclick = async (e) => {
   const b = e.target.closest("button"); if (!b) return;
   if (b.dataset.editSrc) openSourceForm(sources.find((s) => s.id == b.dataset.editSrc));
   if (b.dataset.toggle) {
     const s = sources.find((x) => x.id == b.dataset.toggle);
     const { error } = await sb.from("ra_sources").update({ active: !s.active }).eq("id", s.id);
-    if (error) return toast(error.message, true);
-    await loadSources(); renderSources();
+    if (error) return toast(error.message, { bad: true });
+    toast(s.active ? "Fonte in pausa" : "Fonte riattivata"); await loadSources(); renderSources();
   }
   if (b.dataset.check) {
-    b.disabled = true; b.textContent = "…";
+    b.disabled = true; toast("Controllo in corso…", { busy: true });
     try { const r = await callFn("collect", { source_id: Number(b.dataset.check) }); const x = r.results?.[0] || {};
-      toast(x.error ? `Errore: ${x.error}` : x.baseline ? "Stato di partenza registrato" : `${x.new} novità`, !!x.error); }
-    catch (err) { toast(err.message, true); }
+      toast(x.error ? humanError(x.error) : x.baseline ? "Stato di partenza registrato" : x.new ? `${x.new} novità trovate` : "Nessuna novità", { bad: !!x.error }); }
+    catch (err) { toast(err.message, { bad: true }); }
     await Promise.all([loadSources(), loadAlerts(true)]); renderSources();
   }
 };
 
+// ---------------------------------------------------------------- eventi: team e impostazioni
 $("#f-me").onsubmit = async (e) => {
   e.preventDefault();
   const patch = { full_name: $("#me-name").value.trim() || null, telegram_chat_id: $("#me-tg").value.trim() || null, notify_daily: $("#me-daily").checked, notify_instant: $("#me-instant").checked };
   const { error } = await sb.from("ra_profiles").update(patch).eq("id", me.id);
-  if (error) return toast(error.message, true);
-  Object.assign(me, patch); await loadProfiles(); renderTeam(); toast("Preferenze salvate");
+  if (error) return toast(error.message, { bad: true });
+  Object.assign(me, patch); $("#me-name-side").textContent = me.full_name || me.email;
+  await loadProfiles(); renderTeam(); toast("Preferenze salvate");
 };
-$("#t-team").onchange = async (e) => {
+$("#members").onchange = async (e) => {
   const id = e.target.dataset.role; if (!id) return;
   const { error } = await sb.from("ra_profiles").update({ role: e.target.value }).eq("id", id);
-  if (error) { toast(error.message, true); } else toast("Ruolo aggiornato");
+  error ? toast(error.message, { bad: true }) : toast(`Ruolo aggiornato: ${ROLE[e.target.value]}`);
   await loadProfiles(); renderTeam();
 };
 $("#f-settings").onsubmit = async (e) => {
   e.preventDefault();
   const { error } = await sb.from("ra_settings").upsert([{ key: "org_profile", value: $("#set-org").value.trim() }, { key: "digest_recipients_extra", value: $("#set-extra").value.trim() }]);
-  error ? toast(error.message, true) : toast("Impostazioni salvate");
+  error ? toast(error.message, { bad: true }) : toast("Impostazioni salvate");
 };
 $("#b-preview-digest").onclick = async () => {
+  const p = $("#digest-preview");
   try {
     const r = await callFn("digest", { mode: "daily", dry_run: true });
-    const p = $("#digest-preview"); p.hidden = false;
-    if (!r.would_send) { p.innerHTML = `<p class="muted" style="margin:0">${esc(r.note || "Nessuna novità da inviare.")}</p>`; return; }
-    p.innerHTML = `<div class="muted">${r.would_send} novità · ${r.emails.length} destinatari email · ${r.chats.length} chat Telegram</div><iframe title="Anteprima digest" style="width:100%;height:480px;border:1px solid var(--line);border-radius:var(--radius);background:#fff"></iframe>`;
+    p.hidden = false;
+    if (!r.would_send) { p.innerHTML = `<div class="panel"><p class="muted" style="margin:0">Nessuna novità in coda: il prossimo digest partirà quando ce ne saranno.</p></div>`; return; }
+    p.innerHTML = `<div class="dlg-h" style="border-bottom:1px solid var(--line)"><h3>Anteprima del digest</h3><span class="hint" style="margin-left:auto">${r.would_send} novità · ${r.emails.length} destinatari email · ${r.chats.length} chat Telegram</span></div><iframe title="Anteprima digest" style="width:100%;height:520px;border:0;background:#fff;display:block"></iframe>`;
     p.querySelector("iframe").srcdoc = r.preview_html;
-  } catch (err) { toast(err.message, true); }
+  } catch (err) { toast(err.message, { bad: true }); }
 };
 $("#b-send-digest").onclick = async () => {
-  try { const r = await callFn("digest", { mode: "daily" }); toast(r.sent ? `Digest inviato (${r.sent} novità). ${(r.log || []).join(" · ")}` : r.note); }
-  catch (err) { toast(err.message, true); }
+  if (!(await confirmBox("Inviare il digest adesso?", "Il digest parte subito verso tutti i destinatari con il digest attivo. Le novità incluse non verranno ripetute nel digest di domani mattina.", "Invia ora"))) return;
+  try { const r = await callFn("digest", { mode: "daily" }); toast(r.sent ? `Digest inviato con ${r.sent} novità` : r.note, { bad: !r.sent && /canale/.test(r.note || "") }); }
+  catch (err) { toast(err.message, { bad: true }); }
 };
+
+// aggiorna i tempi relativi ogni minuto
+setInterval(() => { if (me && !$("#v-app").hidden) { renderHealth(); if (!$("#view-alerts").hidden && !dirty) renderAlerts(); } }, 60000);
 
 boot();
 </script>
