@@ -1362,12 +1362,15 @@ function clearFiltersSilently() { ["#f-authority", "#f-tag", "#f-priority", "#q"
 // ---------------------------------------------------------------- importazione calendario controlli
 const IMP_FIELDS = [
   { k: "title", label: "Controllo / attività", req: true, hints: ["controllo", "attivita", "titolo", "nome controllo", "nome", "adempimento", "oggetto", "task", "control", "activity", "summary", "verifica"] },
-  { k: "due_date", label: "Data (prossima scadenza)", req: true, hints: ["prossima scadenza", "scadenza", "data", "entro", "termine", "due date", "deadline", "date", "dtstart", "quando"] },
+  { k: "due_date", label: "Data (prossima scadenza)", hints: ["prossima scadenza", "scadenza", "data", "entro", "termine", "due date", "deadline", "date", "dtstart", "quando"] },
+  { k: "months", label: "Mesi pianificati", hints: ["mesi pianificati", "mesi", "mese", "pianificazione", "mese pianificato", "periodo", "timing"] },
+  { k: "code", label: "Codice controllo", hints: ["id", "codice", "cod", "id controllo", "codice controllo", "rif"] },
   { k: "recurrence", label: "Frequenza", hints: ["frequenza", "periodicita", "ricorrenza", "cadenza", "frequency", "periodicity", "rrule"] },
   { k: "owner", label: "Responsabile", hints: ["responsabile", "owner", "assegnatario", "esecutore", "incaricato", "referente", "funzione"] },
   { k: "area", label: "Area / ambito", hints: ["area", "ambito", "processo", "categoria", "tema", "perimetro", "categories"] },
   { k: "regulation", label: "Riferimento normativo", hints: ["riferimento normativo", "normativa", "riferimento", "norma", "fonte", "regulation", "articolo"] },
-  { k: "notes", label: "Note / modalità", hints: ["note", "descrizione", "modalita", "dettaglio", "evidenze", "description", "notes"] },
+  { k: "notes", label: "Note / output atteso", hints: ["note", "output", "evidenza", "evidenze", "modalita", "descrizione", "dettaglio", "description", "notes"] },
+  { k: "doc", label: "Documento interno di riferimento", hints: ["documento fonte", "documento", "procedura", "policy", "fonte interna"] },
   { k: "kind", label: "Tipo", hints: ["tipo", "tipologia", "type"] },
   { k: "remind_days", label: "Preavviso (giorni)", hints: ["preavviso", "giorni prima", "reminder", "alert giorni"] },
 ];
@@ -1408,6 +1411,41 @@ function parseKind(v, def) {
   if (/intern|internal/.test(t)) return "internal";
   return def;
 }
+// "Marzo", "Trimestrale (Gen/Apr/Lug/Ott)", "Semestrale (Feb/Ago)", "Mensile", "Continuativo", "Ad evento"
+const MESI3 = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
+const MESI_EN = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+function parsePlan(monthsTxt, cadTxt) {
+  const t = norm(monthsTxt), c = norm(cadTxt);
+  const months = [];
+  for (const w of t.split(" ")) {
+    let i = MESI3.findIndex((m) => w.startsWith(m) && (w.length === 3 || MESI.some((full) => full.startsWith(w))));
+    if (i < 0) i = MESI_EN.findIndex((m) => w === m || ["january", "february", "march", "april", "june", "july", "august", "september", "october", "november", "december"].includes(w) && w.startsWith(m));
+    if (i >= 0 && !months.includes(i + 1)) months.push(i + 1);
+  }
+  if (!months.length) {
+    if (/mensil|monthly|ogni mese/.test(t)) return { type: "dated", months: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], rec: "monthly" };
+    if (/continu|ongoing|giornalier|quotidian/.test(t || c)) return { type: "continuous" };
+    if (/evento|tempestiv|on demand|al bisogno|event/.test(t || c)) return { type: "event" };
+    return null;
+  }
+  months.sort((a, b) => a - b);
+  const rec = /mensil/.test(t) || months.length >= 12 ? "monthly" : months.length === 4 || /trimestr/.test(t) ? "quarterly"
+    : months.length === 2 || /semestr/.test(t) ? "semiannual" : months.length === 1 ? "yearly" : "none";
+  // giorno esplicito nella cadenza, es. "Annuale (entro 31/03)"
+  const m = String(cadTxt || "").match(/entro (?:il )?(\d{1,2})[\/.](\d{1,2})/i);
+  return { type: "dated", months, rec, fixedDay: m ? { d: +m[1], m: +m[2] } : null, irregular: rec === "none" };
+}
+function nextPlannedDate(plan, dayMode, today) {
+  const y0 = +today.slice(0, 4);
+  const dayOf = (y, mo) => {
+    if (plan.fixedDay && plan.fixedDay.m === mo) return isoOf(y, mo, plan.fixedDay.d);
+    const last = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+    return isoOf(y, mo, dayMode === "first" ? 1 : dayMode === "15" ? 15 : last);
+  };
+  for (const y of [y0, y0 + 1]) for (const mo of plan.months) { const d = dayOf(y, mo); if (d && d >= today) return d; }
+  return null;
+}
+
 const addRec = (iso, rec, n = 1) => {
   const [y, m, d] = iso.split("-").map(Number);
   if (rec === "weekly") return new Date(Date.UTC(y, m - 1, d + 7 * n)).toISOString().slice(0, 10);
@@ -1450,7 +1488,7 @@ function rruleToText(r) {
   return r;
 }
 
-const imp = { step: 1, file: null, sheets: null, sheet: null, rows: [], headerRow: 0, map: {}, defKind: "control", advance: true, items: [], batch: null };
+const imp = { step: 1, file: null, sheets: null, sheet: null, rows: [], headerRow: 0, map: {}, defKind: "control", advance: true, dayMode: "last", items: [], batch: null };
 
 function impSteps() {
   const st = ["File", "Colonne", "Verifica", "Fatto"];
@@ -1466,9 +1504,10 @@ function renderImp() {
   if (imp.step === 1) {
     B.innerHTML = `
       <div class="drop" id="imp-drop" tabindex="0" role="button" aria-label="Scegli il file del calendario">${icon("sheet")}<b>Trascina qui il file o clicca per sceglierlo</b>
-        <span class="hint">Excel (.xlsx, .xls), CSV o calendario (.ics). Una riga per controllo, con almeno nome e data.</span></div>
+        <span class="hint">Excel (.xlsx, .xls), CSV o calendario (.ics). Una riga per controllo, con il nome e una data oppure i mesi pianificati.</span></div>
       <div class="grid2">
         <div class="field"><label for="imp-kind">Tipo da assegnare alle righe</label><select id="imp-kind">${Object.entries(DL_KIND).map(([k, v]) => `<option value="${k}" ${k === imp.defKind ? "selected" : ""}>${v}</option>`).join("")}</select><span class="hint">Se il file ha una colonna "Tipo", vale quella.</span></div>
+        <div class="field"><label for="imp-day">Se il piano indica solo il mese, la scadenza cade</label><select id="imp-day"><option value="last" ${imp.dayMode === "last" ? "selected" : ""}>l'ultimo giorno del mese</option><option value="15" ${imp.dayMode === "15" ? "selected" : ""}>il 15 del mese</option><option value="first" ${imp.dayMode === "first" ? "selected" : ""}>il primo giorno del mese</option></select><span class="hint">Vale per colonne come "Mesi pianificati" (es. "Trimestrale (Gen/Apr/Lug/Ott)").</span></div>
         <div class="field"><label>&nbsp;</label><label class="switch"><input type="checkbox" id="imp-adv" ${imp.advance ? "checked" : ""}><span><b style="font-weight:500">Porta i controlli ricorrenti alla prossima data futura</b><br><span class="hint">Se il piano riporta la prima esecuzione dell'anno, RegAlert calcola la prossima.</span></span></label></div>
       </div>
       <div class="test-out">Non hai un file pronto? <a href="#" id="imp-tpl">Scarica il modello CSV</a> con le colonne previste: Controllo, Area, Riferimento normativo, Frequenza, Prossima scadenza, Responsabile, Note.</div>`;
@@ -1481,6 +1520,7 @@ function renderImp() {
     drop.ondrop = (e) => { e.preventDefault(); drop.classList.remove("over"); if (e.dataTransfer.files[0]) readImpFile(e.dataTransfer.files[0]); };
     $("#imp-kind").onchange = (e) => (imp.defKind = e.target.value);
     $("#imp-adv").onchange = (e) => (imp.advance = e.target.checked);
+    $("#imp-day").onchange = (e) => (imp.dayMode = e.target.value);
     $("#imp-tpl").onclick = (e) => { e.preventDefault(); downloadTemplate(); };
   }
   if (imp.step === 2) {
@@ -1493,7 +1533,7 @@ function renderImp() {
         <span class="field" style="display:flex;gap:6px;align-items:center">Intestazioni alla riga <select id="imp-hdr" style="width:auto">${imp.rows.slice(0, 15).map((r, i) => r.some((x) => String(x ?? "").trim()) ? `<option value="${i}" ${i === imp.headerRow ? "selected" : ""}>${i + 1}</option>` : "").join("")}</select></span>
         <span class="muted">${imp.rows.slice(imp.headerRow + 1).filter((r) => r.some((x) => String(x ?? "").trim())).length} righe di dati</span></div>
       <p class="hint" style="margin:0">Ho abbinato le colonne del file ai campi dello scadenziario. Controlla e correggi se serve: gli esempi sotto ogni campo vengono dalla prima riga compilata.</p>
-      <div class="map">${IMP_FIELDS.map((f) => `<div class="field"><label for="map-${f.k}">${f.label}${f.req ? ' <span style="color:var(--crit)">*</span>' : ""}</label>
+      <div class="map">${IMP_FIELDS.map((f) => `<div class="field"><label for="map-${f.k}">${f.label}${f.req ? ' <span style="color:var(--crit)">*</span>' : ""}${f.k === "due_date" || f.k === "months" ? ' <span class="hint">(uno dei due)</span>' : ""}</label>
         <select id="map-${f.k}" data-map="${f.k}"><option value="">— non presente —</option>${hdr.map((h, i) => `<option value="${i}" ${imp.map[f.k] === i ? "selected" : ""}>${esc(String(h || `Colonna ${i + 1}`))}</option>`).join("")}</select>
         <span class="sample">${imp.map[f.k] != null ? "es. " + esc((f.k === "due_date" ? (parseDateAny(sample(imp.map[f.k])) ? fullDate(parseDateAny(sample(imp.map[f.k])) + "T12:00:00Z", false) : showSample(imp.map[f.k]) + " (non leggibile)") : showSample(imp.map[f.k])).slice(0, 60)) : "&nbsp;"}</span></div>`).join("")}</div>`;
     F.innerHTML = `<button class="btn" id="imp-back">Indietro</button><button class="btn primary" id="imp-next">Verifica le righe</button>`;
@@ -1502,14 +1542,15 @@ function renderImp() {
     if ($("#imp-sheet")) $("#imp-sheet").onchange = (e) => { loadSheet(e.target.value); renderImp(); };
     $("#imp-back").onclick = () => { imp.step = 1; renderImp(); };
     $("#imp-next").onclick = () => {
-      if (imp.map.title == null || imp.map.due_date == null) return toast("Indica almeno le colonne del controllo e della data.", { bad: true });
+      if (imp.map.title == null || (imp.map.due_date == null && imp.map.months == null && imp.map.recurrence == null)) return toast("Indica la colonna del controllo e quella della data o dei mesi pianificati.", { bad: true });
       buildItems(); imp.step = 3; renderImp();
     };
   }
   if (imp.step === 3) {
     const ok = imp.items.filter((r) => r.include && !r.err).length, err = imp.items.filter((r) => r.err).length, dup = imp.items.filter((r) => r.dup).length, warn = imp.items.filter((r) => r.include && !r.err && r.warns.length).length;
+    const skip = imp.items.filter((r) => r.skip && !r.include).length;
     B.innerHTML = `
-      <div class="imp-sum"><span><b style="color:var(--ok)">${ok}</b> da importare</span>${warn ? `<span><b style="color:var(--warn)">${warn}</b> con avvisi</span>` : ""}${err ? `<span><b style="color:var(--crit)">${err}</b> con errori (correggi o escludi)</span>` : ""}${dup ? `<span><b>${dup}</b> già presenti, escluse</span>` : ""}
+      <div class="imp-sum"><span><b style="color:var(--ok)">${ok}</b> da importare</span>${warn ? `<span><b style="color:var(--warn)">${warn}</b> con avvisi</span>` : ""}${err ? `<span><b style="color:var(--crit)">${err}</b> con errori (correggi o escludi)</span>` : ""}${dup ? `<span><b>${dup}</b> già presenti, escluse</span>` : ""}${skip ? `<span title="Continuativi o ad evento: per includerli indica una data nella riga"><b>${skip}</b> continuativi o ad evento, esclusi</span>` : ""}
         <label style="margin-left:auto;display:flex;gap:6px;align-items:center"><input type="checkbox" id="imp-only-err" style="width:auto"> Mostra solo righe da sistemare</label></div>
       <div class="prev-wrap"><table class="prev"><thead><tr><th></th><th>Stato</th><th>Controllo</th><th>Data</th><th>Frequenza</th><th>Tipo</th><th>Responsabile</th><th>Area</th></tr></thead><tbody id="imp-rows"></tbody></table></div>`;
     renderImpRows();
@@ -1568,7 +1609,8 @@ function autoMap() {
     hdr.forEach((h, i) => {
       if (used.has(i) || !h) return;
       for (const [rank, hint] of f.hints.entries()) {
-        const s = h === hint ? 100 - rank : h.startsWith(hint) ? 60 - rank : h.includes(hint) ? 40 - rank : 0;
+        const short = hint.length <= 3;   // "id", "cod", "rif": solo corrispondenza esatta o a inizio parola
+        const s = h === hint ? 100 - rank : short ? (new RegExp(`^${hint}\\b`).test(h) ? 50 - rank : 0) : h.startsWith(hint) ? 60 - rank : h.includes(hint) ? 40 - rank : 0;
         if (s > bs) { bs = s; bi = i; }
       }
     });
@@ -1588,25 +1630,39 @@ function buildItems() {
   imp.items = imp.rows.slice(imp.headerRow + 1).map((r, i) => {
     if (!r.some((x) => String(x ?? "").trim())) return null;
     const it = { line: imp.headerRow + i + 2, include: true, warns: [], err: null };
-    it.title = String(get(r, "title") ?? "").trim().slice(0, 300);
+    const code = String(get(r, "code") ?? "").trim();
+    it.title = ((code && code.length <= 12 ? code + " · " : "") + String(get(r, "title") ?? "").trim()).slice(0, 300);
     const rawDate = get(r, "due_date");
     it.due_date = parseDateAny(rawDate);
-    const rc = parseRec(get(r, "recurrence")); it.recurrence = rc.rec; if (rc.warn) it.warns.push(rc.warn);
+    const plan = parsePlan(get(r, "months"), get(r, "recurrence"));
+    if (plan?.type === "dated") {
+      it.recurrence = plan.rec;
+      if (!it.due_date) { it.due_date = nextPlannedDate(plan, imp.dayMode, today); it.planned = true; }
+      if (plan.irregular) it.warns.push("mesi pianificati irregolari: importato come una tantum sul primo mese utile");
+    } else {
+      const rc = parseRec(get(r, "recurrence")); it.recurrence = rc.rec;
+      if (rc.warn && !plan) it.warns.push(rc.warn);
+      if (plan && !it.due_date) it.skip = plan.type === "continuous" ? "controllo continuativo: non ha una scadenza da pianificare" : "controllo ad evento: non ha una scadenza da pianificare";
+    }
     it.kind = parseKind(get(r, "kind"), imp.defKind);
     Object.assign(it, matchOwner(get(r, "owner")));
     it.area = String(get(r, "area") ?? "").trim().slice(0, 80) || null;
     it.regulation = String(get(r, "regulation") ?? "").trim().slice(0, 200) || null;
-    it.notes = String(get(r, "notes") ?? "").trim().slice(0, 2000) || null;
-    const rd = parseInt(get(r, "remind_days"), 10); it.remind_days = rd >= 0 && rd <= 90 ? rd : (it.recurrence === "weekly" ? 1 : it.recurrence === "monthly" ? 3 : 7);
+    const doc = String(get(r, "doc") ?? "").trim();
+    it.notes = [String(get(r, "notes") ?? "").trim() && `Output: ${String(get(r, "notes")).trim()}`, doc && `Documento: ${doc}`].filter(Boolean).join("\n").slice(0, 2000) || null;
+    if (imp.map.doc == null) it.notes = String(get(r, "notes") ?? "").trim().slice(0, 2000) || null;
+    const rd = parseInt(get(r, "remind_days"), 10); it.remind_days = rd >= 0 && rd <= 90 ? rd : ({ weekly: 1, monthly: 3, quarterly: 7, semiannual: 14, yearly: 14 }[it.recurrence] ?? 7);
     if (it.due_date && it.recurrence !== "none" && imp.advance && it.due_date < today) {
       let d = it.due_date, n = 0; while (d < today && n < 600) { d = addRec(it.due_date, it.recurrence, ++n); }
       it.warns.push(`data nel file ${fullDate(it.due_date + "T12:00:00Z", false)}: portata alla prossima, ${fullDate(d + "T12:00:00Z", false)}`); it.due_date = d;
     } else if (it.due_date && it.due_date < today) it.warns.push("data passata: comparirà tra le scadute");
     validateItem(it, rawDate);
-    it.dup = !it.err && existing.has(norm(it.title) + "|" + it.due_date);
+    if (it.skip && !it.due_date) { it.err = null; it.include = false; it.warns.unshift(it.skip); }
+    it.dup = !it.err && !it.skip && existing.has(norm(it.title) + "|" + it.due_date);
     if (it.dup) { it.include = false; it.warns.push("già presente nello scadenziario"); }
     return it;
   }).filter((it) => it && (it.title || it.due_date));
+  imp.items.sort((a, b) => (!!a.skip - !!b.skip) || (a.line - b.line));
 }
 function validateItem(it, rawDate) {
   it.err = !it.title ? "manca il nome del controllo" : !it.due_date ? (rawDate ? `data "${String(rawDate).slice(0, 20)}" non leggibile` : "manca la data") : null;
@@ -1615,8 +1671,8 @@ function renderImpRows() {
   const only = $("#imp-only-err")?.checked;
   const members = profiles.filter((p) => ["analyst", "admin"].includes(p.role));
   $("#imp-rows").innerHTML = imp.items.map((it, i) => (only && !it.err && !it.warns.length) ? "" : `<tr class="${it.err ? "bad" : it.include ? "" : "off"}" data-i="${i}">
-    <td><input type="checkbox" data-f="include" ${it.include ? "checked" : ""} ${it.err ? "disabled" : ""} aria-label="Includi riga ${it.line}" style="min-width:0;width:auto"></td>
-    <td class="st ${it.err ? "err" : it.warns.length ? "warn" : "ok"}" title="${esc([it.err, ...it.warns].filter(Boolean).join("\n"))}">riga ${it.line} · ${it.err ? esc(it.err) : it.warns.length ? esc(it.warns[0]) : "ok"}</td>
+    <td><input type="checkbox" data-f="include" ${it.include ? "checked" : ""} ${it.err || !it.due_date ? "disabled" : ""} aria-label="Includi riga ${it.line}" style="min-width:0;width:auto"></td>
+    <td class="st ${it.err ? "err" : it.skip && !it.include ? "" : it.warns.length ? "warn" : "ok"}" style="${it.skip && !it.include ? "color:var(--muted)" : ""}" title="${esc([it.err, ...it.warns].filter(Boolean).join("\n"))}">riga ${it.line} · ${it.err ? esc(it.err) : it.warns.length ? esc(it.warns[0]) : it.planned ? "ok, dal mese pianificato" : "ok"}</td>
     <td class="t"><input data-f="title" value="${esc(it.title)}" aria-label="Controllo"></td>
     <td><input type="date" data-f="due_date" value="${it.due_date || ""}" aria-label="Data"></td>
     <td><select data-f="recurrence" aria-label="Frequenza"><option value="none">Una tantum</option>${Object.entries(DL_REC).map(([k, v]) => `<option value="${k}" ${it.recurrence === k ? "selected" : ""}>${v[0].toUpperCase() + v.slice(1)}</option>`).join("")}</select></td>
@@ -1631,7 +1687,11 @@ function onImpEdit(e) {
   if (f === "include") it.include = e.target.checked;
   else if (f === "assignee") it.assignee = e.target.value || null;
   else it[f] = e.target.value.trim() || (f === "area" ? null : "");
-  if (f === "title" || f === "due_date") { const was = !!it.err; validateItem(it, it.due_date); if (was && !it.err) it.include = true; }
+  if (f === "title" || f === "due_date") {
+    const was = !!it.err; validateItem(it, it.due_date);
+    if (it.skip) { if (it.due_date) { it.include = true; it.err = null; } else { it.include = false; it.err = null; } }
+    else if (was && !it.err) it.include = true;
+  }
   if (e.type === "change") { const y = $(".prev-wrap").scrollTop; renderImp(); $(".prev-wrap").scrollTop = y; }
 }
 async function runImport() {
