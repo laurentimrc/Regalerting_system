@@ -63,14 +63,19 @@ Deno.serve(async (req) => {
     const days = (d: string) => Math.round((Date.parse(d + "T00:00:00Z") - today.getTime()) / 86400000);
     const horizon = new Date(today.getTime() + 90 * 86400000).toISOString().slice(0, 10);
     const [{ data: dls }, { data: als }, { data: ppl }] = await Promise.all([
-      db.from("ra_deadlines").select("title,due_date,kind,authority,assignee,owner_label,remind_days").eq("status", "open").lte("due_date", horizon),
+      db.from("ra_deadlines").select("title,due_date,kind,authority,assignee,owner_label,remind_days,continuous").eq("status", "open").lte("due_date", horizon),
       db.from("ra_alerts_view").select("title,due_date,source_authority,assignee_name,status").not("due_date", "is", null)
         .not("status", "in", "(closed,not_relevant)").lte("due_date", horizon),
       db.from("ra_profiles").select("id,full_name,email"),
     ]);
     const nameOf = (id: string | null) => { const p = (ppl ?? []).find((x: { id: string }) => x.id === id); return p ? (p.full_name || p.email) : null; };
+    // presidi continuativi: una sola riga riassuntiva per periodo di attestazione
+    const pres = (dls ?? []).filter((d) => d.continuous && days(d.due_date) <= d.remind_days);
+    const presByDate = new Map<string, number>();
+    for (const d of pres) presByDate.set(d.due_date, (presByDate.get(d.due_date) ?? 0) + 1);
     deadlines = [
-      ...(dls ?? []).filter((d) => days(d.due_date) <= d.remind_days)
+      ...[...presByDate].map(([due, n]) => ({ title: `Attestazione presidi continuativi: ${n} da attestare`, due_date: due, kind: "control", authority: null, assignee_name: "funzioni varie", days: days(due) })),
+      ...(dls ?? []).filter((d) => !d.continuous && days(d.due_date) <= d.remind_days)
         .map((d) => ({ title: d.title, due_date: d.due_date, kind: d.kind, authority: d.authority, assignee_name: nameOf(d.assignee) ?? d.owner_label, days: days(d.due_date) })),
       ...(als ?? []).filter((a) => days(a.due_date) <= 7)
         .map((a) => ({ title: `Triage: ${a.title}`, due_date: a.due_date, kind: "internal", authority: a.source_authority, assignee_name: a.assignee_name, days: days(a.due_date) })),
