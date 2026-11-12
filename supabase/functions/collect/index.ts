@@ -183,6 +183,18 @@ async function enrichPending(db: SupabaseClient) {
       // la priorità suggerita si applica solo se nessuno ha ancora fatto triage
       if (a.status === "new" && a.priority === "medium") patch.priority = r.priority;
       await db.from("ra_alerts").update(patch).eq("id", a.id);
+      // date citate nel documento → proposte per lo scadenziario, da confermare nella dashboard
+      if (r.deadlines.length) {
+        const { data: have } = await db.from("ra_deadlines").select("due_date").eq("alert_id", a.id);
+        const known = new Set((have ?? []).map((h: { due_date: string }) => h.due_date));
+        const fresh = r.deadlines.filter((d) => !known.has(d.date) && !!known.add(d.date));
+        if (fresh.length) {
+          await db.from("ra_deadlines").insert(fresh.map((d) => ({
+            title: d.label, due_date: d.date, kind: d.kind, authority: a.source_authority, url: a.url,
+            alert_id: a.id, status: "proposed", source: "ai", created_by: null,
+          })));
+        }
+      }
       n++;
     } catch (e) {
       errors.push(`#${a.id}: ${(e as Error).message}`);

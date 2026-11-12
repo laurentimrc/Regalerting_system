@@ -276,6 +276,59 @@ pre.diff .del { color: var(--crit); background: var(--crit-soft); display: block
 .role b { font-size: 13.5px; }
 .role span { font-size: 13px; color: var(--muted); }
 
+/* scadenziario */
+.dl-toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.seg { display: inline-flex; background: var(--surface-2); border-radius: 9px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: none; font: inherit; font-size: 13px; font-weight: 500; color: var(--muted); padding: 5px 12px; border-radius: 7px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgba(16,30,54,.12); }
+.dl-group { display: grid; gap: 0; }
+.dl-group > .eyebrow { padding: 0 2px 8px; display: flex; gap: 8px; align-items: center; }
+.dl-group > .eyebrow b { font-variant-numeric: tabular-nums; color: var(--fg-2); }
+.dl-group.overdue > .eyebrow { color: var(--crit); }
+.dl { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.dl:last-child { border-bottom: 0; }
+.dl.done { opacity: .6; }
+.dl.done .dl-title { text-decoration: line-through; text-decoration-color: var(--line-strong); }
+.datebox { width: 54px; border-radius: 10px; border: 1px solid var(--line); text-align: center; overflow: hidden; background: var(--surface); }
+.datebox span { display: block; font-size: 10.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; padding: 2px 0; background: var(--surface-2); color: var(--muted); }
+.datebox b { display: block; font-family: var(--font-head); font-size: 20px; line-height: 1.5; font-variant-numeric: tabular-nums; }
+.datebox.over { border-color: var(--crit); } .datebox.over span { background: var(--crit); color: #fff; }
+.datebox.soon { border-color: var(--high); } .datebox.soon span { background: var(--high); color: #fff; }
+.dl-title { font-weight: 600; overflow-wrap: anywhere; }
+.dl-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+.dl-acts { display: flex; gap: 4px; align-items: center; }
+.when { font-weight: 600; font-size: 12.5px; white-space: nowrap; }
+.when.over { color: var(--crit); } .when.soon { color: var(--high); } .when.later { color: var(--muted); font-weight: 500; }
+.k-regulatory { color: #1f4fa3; background: #e6eefb; } .k-reporting { color: #8a4b08; background: #fdf0df; } .k-consultation { color: #0b6e5c; background: #e0f3ee; } .k-internal { color: #5b4a8b; background: #eeeaf8; }
+:root[data-theme="dark"] .k-regulatory, :root[data-theme="dark"] .k-reporting, :root[data-theme="dark"] .k-consultation, :root[data-theme="dark"] .k-internal { background: var(--surface-2); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .k-regulatory, :root:not([data-theme="light"]) .k-reporting, :root:not([data-theme="light"]) .k-consultation, :root:not([data-theme="light"]) .k-internal { background: var(--surface-2); filter: brightness(1.6); } }
+.proposals { border-color: color-mix(in srgb, var(--accent) 30%, var(--line)); }
+.proposals .ph { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.proposals .ph svg { width: 16px; height: 16px; color: var(--accent); }
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.cal-h { padding: 8px 10px; font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-bottom: 1px solid var(--line); }
+.cal-d { min-height: 104px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 6px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cal-d:nth-child(7n) { border-right: 0; }
+.cal-d.out { background: var(--surface-2); }
+.cal-d.out .n { opacity: .45; }
+.cal-d .n { font-size: 12.5px; font-variant-numeric: tabular-nums; color: var(--fg-2); font-weight: 500; width: 24px; height: 24px; display: grid; place-items: center; border-radius: 50%; }
+.cal-d.today .n { background: var(--accent); color: var(--accent-ink); }
+.cal-ev { border: 0; text-align: left; font: inherit; font-size: 12px; padding: 2px 6px; border-radius: 5px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.cal-ev.done { opacity: .5; text-decoration: line-through; }
+.cal-more { font-size: 11.5px; color: var(--muted); padding-left: 6px; }
+.cal-nav { display: flex; align-items: center; gap: 6px; }
+.cal-nav b { font-family: var(--font-head); font-size: 16px; min-width: 150px; text-align: center; }
+.linked { display: grid; }
+.linked .dl { grid-template-columns: 46px minmax(0, 1fr) auto; padding: 10px 14px; }
+.linked .datebox { width: 46px; } .linked .datebox b { font-size: 17px; }
+.kinds.kinds4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 860px) {
+  .cal-d { min-height: 64px; padding: 4px; } .cal-ev { font-size: 0; padding: 0; width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .cal-d .evs { display: flex; flex-wrap: wrap; gap: 3px; } .cal-more { display: none; }
+  .dl { grid-template-columns: 48px minmax(0, 1fr); } .dl-acts { grid-column: 2; } .datebox { width: 48px; }
+  .kinds.kinds4 { grid-template-columns: 1fr 1fr; }
+}
+
 /* dialog */
 dialog { border: 0; border-radius: 14px; padding: 0; width: min(640px, calc(100vw - 32px)); max-height: calc(100vh - 48px); background: var(--surface); color: var(--fg); box-shadow: 0 24px 64px rgba(0,0,0,.3); }
 dialog::backdrop { background: rgba(10, 18, 32, .45); }
@@ -387,6 +440,9 @@ details.adv[open] summary { margin-bottom: 12px; }
   <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></symbol>
   <symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-repeat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></symbol>
+  <symbol id="i-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></symbol>
   <symbol id="i-logo" viewBox="0 0 24 24" fill="none" stroke="#f2c14e" stroke-width="2.4" stroke-linecap="round"><path d="M7 18V6h6a3.5 3.5 0 0 1 0 7H7m5 0 5 5"/></symbol>
 </svg>
 
@@ -443,6 +499,7 @@ details.adv[open] summary { margin-bottom: 12px; }
     <div class="logo"><div class="logo-mark"><svg><use href="#i-logo"/></svg></div><div><b>RegAlert</b><small id="org-line">Monitoraggio normativo</small></div></div>
     <nav class="nav" id="nav" aria-label="Sezioni">
       <button data-view="alerts" aria-current="page"><svg><use href="#i-inbox"/></svg>Alert<span class="count" id="nav-count" hidden></span></button>
+      <button data-view="deadlines"><svg><use href="#i-cal"/></svg>Scadenziario<span class="count" id="nav-dl" hidden></span></button>
       <button data-view="sources"><svg><use href="#i-radar"/></svg>Fonti<span class="count" id="nav-src-err" hidden style="background:var(--crit);"></span></button>
       <button data-view="team"><svg><use href="#i-team"/></svg>Team<span class="count" id="nav-pending" hidden style="background:var(--gold);color:var(--ink)"></span></button>
       <button data-view="settings" data-admin><svg><use href="#i-gear"/></svg>Impostazioni</button>
@@ -496,6 +553,28 @@ details.adv[open] summary { margin-bottom: 12px; }
         </div>
         <div class="stats" id="src-stats"></div>
         <div class="card srcs" id="src-list"></div>
+      </section>
+
+      <!-- SCADENZIARIO -->
+      <section id="view-deadlines" class="page" hidden style="max-width:1120px">
+        <div class="page-h">
+          <div><h2>Scadenziario</h2><p>Scadenze normative, segnalazioni, consultazioni e scadenze interne. Ogni mattina il digest ricorda quelle in arrivo, ciascuna con il suo preavviso.</p></div>
+          <div class="spacer"></div>
+          <div class="dl-toolbar">
+            <div class="seg" role="group" aria-label="Vista"><button id="dl-v-list" aria-pressed="true">Elenco</button><button id="dl-v-month" aria-pressed="false">Mese</button></div>
+            <button class="btn" id="b-ics" title="Scarica le scadenze aperte per Outlook o Google Calendar"><svg><use href="#i-download"/></svg>.ics</button>
+            <button class="btn primary" id="b-add-dl" data-edit><svg><use href="#i-plus"/></svg>Nuova scadenza</button>
+          </div>
+        </div>
+        <div class="stats" id="dl-stats"></div>
+        <div class="filters" style="padding:0;border:0">
+          <span class="pillselect"><select id="dl-f-kind" aria-label="Tipo"><option value="">Tipo</option></select></span>
+          <span class="pillselect"><select id="dl-f-auth" aria-label="Autorità"><option value="">Autorità</option></select></span>
+          <button class="chiptoggle" id="dl-f-mine" aria-pressed="false">Assegnate a me</button>
+          <button class="chiptoggle" id="dl-f-alerts" aria-pressed="true" title="Mostra anche le scadenze interne fissate nel triage degli alert">Scadenze di triage</button>
+        </div>
+        <div id="dl-proposals"></div>
+        <div id="dl-body" class="stack" style="display:grid;gap:20px"></div>
       </section>
 
       <!-- TEAM -->
@@ -569,6 +648,37 @@ details.adv[open] summary { margin-bottom: 12px; }
       <datalist id="dl-auth"><option>ESMA</option><option>EBA</option><option>EIOPA</option><option>Commissione UE</option><option>EUR-Lex</option><option>Banca d'Italia</option><option>Consob</option><option>UIF</option><option>MEF</option><option>FATF/GAFI</option></datalist>
     </div>
     <div class="dlg-f"><button type="button" class="btn danger" id="b-delete-source" hidden style="margin-right:auto">Elimina fonte</button><button type="button" class="btn" id="b-cancel-source2">Annulla</button><button class="btn primary" id="b-save-source">Salva fonte</button></div>
+  </form>
+</dialog>
+
+<!-- dialog scadenza -->
+<dialog id="dlg-dl">
+  <form id="f-dl" method="dialog" style="display:flex;flex-direction:column;max-height:calc(100vh - 48px)" novalidate>
+    <div class="dlg-h"><h3 id="dl-form-title">Nuova scadenza</h3><button type="button" class="btn ghost sm" data-close-dl aria-label="Chiudi"><svg><use href="#i-x"/></svg></button></div>
+    <div class="dlg-b">
+      <div id="dl-from-alert" class="test-out" hidden></div>
+      <div class="field"><label for="d-title">Cosa scade</label><input id="d-title" required placeholder="Es. Invio relazione annuale antiriciclaggio"></div>
+      <div class="grid2">
+        <div class="field"><label for="d-date">Data</label><input id="d-date" type="date" required></div>
+        <div class="field"><label for="d-assignee">Responsabile</label><select id="d-assignee"></select></div>
+      </div>
+      <div class="field"><label>Tipo</label>
+        <div class="kinds kinds4">
+          <label class="kind"><input type="radio" name="d-kind" value="regulatory" checked><b>Normativa</b><span>Entrata in vigore o applicazione.</span></label>
+          <label class="kind"><input type="radio" name="d-kind" value="reporting"><b>Segnalazione</b><span>Invii periodici alle autorità.</span></label>
+          <label class="kind"><input type="radio" name="d-kind" value="consultation"><b>Consultazione</b><span>Termine per inviare commenti.</span></label>
+          <label class="kind"><input type="radio" name="d-kind" value="internal"><b>Interna</b><span>Adeguamenti, policy, formazione.</span></label>
+        </div></div>
+      <div class="grid2">
+        <div class="field"><label for="d-authority">Autorità</label><input id="d-authority" list="dl-auth" placeholder="Facoltativo"></div>
+        <div class="field"><label for="d-reg">Riferimento normativo</label><input id="d-reg" placeholder="Es. MiCAR art. 72, D.Lgs. 231/2007"></div>
+        <div class="field"><label for="d-rec">Si ripete</label><select id="d-rec"><option value="none">No</option><option value="monthly">Ogni mese</option><option value="quarterly">Ogni trimestre</option><option value="yearly">Ogni anno</option></select><span class="hint">Completandola, RegAlert crea la scadenza successiva.</span></div>
+        <div class="field"><label for="d-remind">Preavviso nel digest</label><select id="d-remind"><option value="1">1 giorno prima</option><option value="3">3 giorni prima</option><option value="7" selected>7 giorni prima</option><option value="14">14 giorni prima</option><option value="30">30 giorni prima</option><option value="60">60 giorni prima</option></select></div>
+      </div>
+      <div class="field"><label for="d-url">Link al documento</label><input id="d-url" type="url" placeholder="https://"></div>
+      <div class="field"><label for="d-notes">Note</label><textarea id="d-notes" placeholder="Cosa preparare, chi coinvolgere"></textarea></div>
+    </div>
+    <div class="dlg-f"><button type="button" class="btn danger" id="b-del-dl" hidden style="margin-right:auto">Elimina</button><button type="button" class="btn" data-close-dl>Annulla</button><button class="btn primary">Salva</button></div>
   </form>
 </dialog>
 
@@ -695,17 +805,20 @@ async function enter() {
   $$("[data-edit]").forEach((e) => (e.hidden = !canEdit()));
   $("#f-priority").innerHTML = `<option value="">Priorità</option>` + Object.entries(PRIORITY).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
   tab = store.get("ra_tab") || "open";
-  await Promise.all([loadProfiles(), loadSources(), loadAlerts(true)]);
+  await Promise.all([loadProfiles(), loadSources(), loadAlerts(true), loadDeadlines()]);
   go(location.hash.slice(1) || store.get("ra_view") || "alerts");
-  sb.channel("ra-alerts").on("postgres_changes", { event: "*", schema: "public", table: "ra_alerts" }, () => loadAlerts(true)).subscribe();
+  sb.channel("ra-live")
+    .on("postgres_changes", { event: "*", schema: "public", table: "ra_alerts" }, () => loadAlerts(true))
+    .on("postgres_changes", { event: "*", schema: "public", table: "ra_deadlines" }, () => loadDeadlines())
+    .subscribe();
 }
 
 function go(view) {
-  if (!["alerts", "sources", "team", "settings"].includes(view)) view = "alerts";
+  if (!["alerts", "deadlines", "sources", "team", "settings"].includes(view)) view = "alerts";
   if (view === "settings" && me.role !== "admin") view = "alerts";
   $$("#nav button").forEach((b) => b.dataset.view === view ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
-  ["alerts", "sources", "team", "settings"].forEach((v) => ($("#view-" + v).hidden = v !== view));
-  $("#view-title").textContent = { alerts: "Alert", sources: "Fonti", team: "Team", settings: "Impostazioni" }[view];
+  ["alerts", "deadlines", "sources", "team", "settings"].forEach((v) => ($("#view-" + v).hidden = v !== view));
+  $("#view-title").textContent = { alerts: "Alert", deadlines: "Scadenziario", sources: "Fonti", team: "Team", settings: "Impostazioni" }[view];
   $("#search-box").hidden = view !== "alerts";
   store.set("ra_view", view);
   if (location.hash.slice(1) !== view) history.replaceState(null, "", "#" + view);
@@ -714,6 +827,7 @@ function go(view) {
   if (view === "sources") renderSources();
   if (view === "team") renderTeam();
   if (view === "settings") loadSettings();
+  if (view === "deadlines") renderDeadlines();
 }
 const closeNav = () => { $("#v-app").classList.remove("nav-open"); $("#scrim").hidden = true; };
 
@@ -743,6 +857,7 @@ async function loadAlerts(silent = false) {
   $("#f-tag").value = cur;
   const open = alerts.filter((a) => a.status === "new").length;
   $("#nav-count").hidden = !open; $("#nav-count").textContent = open;
+  if (typeof updateDlBadge === "function" && me) updateDlBadge();
   if (!$("#view-alerts").hidden) { renderAlerts(); if (selectedId && !dirty) renderDetail(); }
 }
 
@@ -882,6 +997,11 @@ function renderDetail() {
     </section>
 
     <section>
+      <div class="section-h"><h3>Scadenze collegate</h3>${ed ? `<button type="button" class="btn ghost sm" id="b-dl-from-alert" style="margin-left:auto">${icon("plus")}Aggiungi allo scadenziario</button>` : ""}</div>
+      <div class="card linked" id="linked-dl">${linkedDeadlinesHtml(a)}</div>
+    </section>
+
+    <section>
       <div class="section-h"><h3>Storico e commenti</h3><span class="hint">registro non modificabile</span></div>
       <div class="card">
         ${ed ? `<form class="comment-form" id="f-comment"><input id="c-text" placeholder="Scrivi un commento per il team" aria-label="Commento"><button class="btn">Invia</button></form>` : ""}
@@ -1014,6 +1134,181 @@ async function loadSettings() {
   const m = Object.fromEntries((data || []).map((r) => [r.key, r.value]));
   $("#set-org").value = m.org_profile || ""; $("#set-extra").value = m.digest_recipients_extra || "";
 }
+
+// ---------------------------------------------------------------- scadenziario
+const DL_KIND = { regulatory: "Normativa", reporting: "Segnalazione", consultation: "Consultazione", internal: "Interna" };
+const DL_REC = { monthly: "ogni mese", quarterly: "ogni trimestre", yearly: "ogni anno" };
+let deadlines = [], dlView = store.get("ra_dl_view") || "list", calMonth = null, editingDl = null;
+const todayKey = () => dayKey(Date.now());
+const dDays = (d) => Math.round((Date.parse(d + "T00:00:00Z") - Date.parse(todayKey() + "T00:00:00Z")) / 86400000);
+const whenTxt = (n) => n < 0 ? `scaduta da ${-n} ${-n === 1 ? "giorno" : "giorni"}` : n === 0 ? "oggi" : n === 1 ? "domani" : `tra ${n} giorni`;
+const whenCls = (n) => n < 0 ? "over" : n <= 7 ? "soon" : "later";
+const MONTHS = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
+
+async function loadDeadlines() {
+  const { data, error } = await sb.from("ra_deadlines").select("*").order("due_date");
+  if (error) return;
+  deadlines = data || [];
+  updateDlBadge();
+  if (!$("#view-deadlines").hidden) renderDeadlines();
+  if (selectedId && $("#linked-dl")) $("#linked-dl").innerHTML = linkedDeadlinesHtml(alerts.find((a) => a.id === selectedId));
+}
+
+function updateDlBadge() {
+  const open = [...deadlines.filter((d) => d.status === "open").map((d) => d.due_date), ...alerts.filter((a) => a.due_date && isOpen(a)).map((a) => a.due_date)];
+  const urgent = open.filter((d) => dDays(d) <= 7).length, late = open.some((d) => dDays(d) < 0);
+  const props = deadlines.filter((d) => d.status === "proposed").length;
+  const n = urgent + (canEdit() ? props : 0);
+  $("#nav-dl").hidden = !n; $("#nav-dl").textContent = n;
+  $("#nav-dl").style.background = late ? "var(--crit)" : "";
+}
+
+// scadenze manuali + scadenze di triage degli alert, in un formato unico
+function dlItems({ includeDone = false } = {}) {
+  const kind = $("#dl-f-kind").value, au = $("#dl-f-auth").value, mine = $("#dl-f-mine").getAttribute("aria-pressed") === "true", withAlerts = $("#dl-f-alerts").getAttribute("aria-pressed") === "true";
+  const items = deadlines.filter((d) => d.status !== "proposed" && (includeDone || d.status === "open")).map((d) => ({ ...d, _type: "dl" }));
+  if (withAlerts) for (const a of alerts) if (a.due_date && (includeDone || isOpen(a)))
+    items.push({ _type: "alert", id: "a" + a.id, alert_id: a.id, title: a.title, due_date: a.due_date, kind: "internal", authority: a.source_authority, assignee: a.assignee, status: isOpen(a) ? "open" : "done", recurrence: "none" });
+  return items.filter((d) => (!kind || d.kind === kind) && (!au || d.authority === au) && (!mine || d.assignee === me.id))
+    .sort((a, b) => a.due_date.localeCompare(b.due_date));
+}
+
+function dateBox(d) {
+  const n = dDays(d.due_date), [y, m, dd] = d.due_date.split("-");
+  const cls = d.status === "done" ? "" : n < 0 ? "over" : n <= 7 ? "soon" : "";
+  return `<div class="datebox ${cls}" title="${esc(fullDate(d.due_date + "T12:00:00Z", false))}"><span>${MONTHS[+m - 1]}${y !== todayKey().slice(0, 4) ? " " + y.slice(2) : ""}</span><b>${+dd}</b></div>`;
+}
+function dlRow(d, compact = false) {
+  const n = dDays(d.due_date), ed = canEdit(), who = profiles.find((p) => p.id === d.assignee);
+  const isAlert = d._type === "alert";
+  return `<div class="dl ${d.status === "done" ? "done" : ""}" data-dl="${d.id}">
+    ${dateBox(d)}
+    <div style="min-width:0">
+      <div class="dl-title">${isAlert ? `<span class="muted" style="font-weight:500">Triage · </span>` : ""}${esc(d.title)}</div>
+      <div class="dl-meta">
+        ${d.status === "done" ? `<span>completata ${d.done_at ? relTime(d.done_at) : ""}</span>` : `<span class="when ${whenCls(n)}">${whenTxt(n)}</span>`}
+        <span class="badge k-${d.kind}">${DL_KIND[d.kind]}</span>
+        ${d.authority ? `<span>${esc(d.authority)}</span>` : ""}
+        ${d.regulation ? `<span class="tag">${esc(d.regulation)}</span>` : ""}
+        ${d.recurrence && d.recurrence !== "none" ? `<span title="Ricorrente">${icon("repeat").replace("<svg", '<svg style="width:13px;height:13px;vertical-align:-2px"')} ${DL_REC[d.recurrence]}</span>` : ""}
+        ${who ? `<span style="display:inline-flex;gap:5px;align-items:center">${avatar(who, "sm")}${compact ? "" : esc(who.full_name || who.email)}</span>` : `<span>senza responsabile</span>`}
+        ${!compact && d.alert_id && !isAlert ? `<a href="#" data-goto-alert="${d.alert_id}">alert collegato</a>` : ""}
+      </div>
+    </div>
+    <div class="dl-acts">
+      ${isAlert ? `<button class="btn sm" data-goto-alert="${d.alert_id}">Apri alert</button>`
+        : ed ? `${d.status === "open" ? `<button class="btn sm" data-complete="${d.id}">${icon("check")}Completa</button>` : `<button class="btn ghost sm" data-reopen="${d.id}">Riapri</button>`}<button class="btn ghost sm" data-edit-dl="${d.id}">Modifica</button>` : ""}
+    </div>
+  </div>`;
+}
+
+function renderDeadlines() {
+  const kinds = Object.entries(DL_KIND).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+  const curK = $("#dl-f-kind").value, curA = $("#dl-f-auth").value;
+  $("#dl-f-kind").innerHTML = `<option value="">Tipo</option>${kinds}`; $("#dl-f-kind").value = curK;
+  const auths = [...new Set([...deadlines.map((d) => d.authority), ...alerts.filter((a) => a.due_date).map((a) => a.source_authority)].filter(Boolean))].sort();
+  $("#dl-f-auth").innerHTML = `<option value="">Autorità</option>${auths.map((a) => `<option>${esc(a)}</option>`).join("")}`; $("#dl-f-auth").value = curA;
+  ["#dl-f-kind", "#dl-f-auth"].forEach((s) => $(s).classList.toggle("on", !!$(s).value));
+  $("#dl-v-list").setAttribute("aria-pressed", dlView === "list"); $("#dl-v-month").setAttribute("aria-pressed", dlView === "month");
+
+  const open = dlItems();
+  const over = open.filter((d) => dDays(d.due_date) < 0), week = open.filter((d) => dDays(d.due_date) >= 0 && dDays(d.due_date) <= 7);
+  const month = open.filter((d) => dDays(d.due_date) > 7 && dDays(d.due_date) <= 30), later = open.filter((d) => dDays(d.due_date) > 30);
+  $("#dl-stats").innerHTML = [[over.length, "scadute", over.length ? "var(--crit)" : ""], [week.length, "nei prossimi 7 giorni", week.length ? "var(--high)" : ""],
+    [month.length, "entro 30 giorni"], [open.filter((d) => !d.assignee).length, "senza responsabile"]]
+    .map(([n, l, c]) => `<div class="card stat"><b style="${c ? `color:${c}` : ""}">${n}</b><span>${l}</span></div>`).join("");
+
+  const props = deadlines.filter((d) => d.status === "proposed");
+  $("#dl-proposals").innerHTML = props.length && canEdit() ? `<div class="card proposals"><div class="ph">${icon("spark")}<b>Date trovate dall'AI nei documenti</b><span class="hint" style="margin-left:4px">Conferma quelle da tenere: finché non le confermi non entrano nello scadenziario né nel digest.</span></div>
+    ${props.map((d) => `<div class="dl" data-dl="${d.id}">${dateBox(d)}<div style="min-width:0"><div class="dl-title">${esc(d.title)}</div><div class="dl-meta"><span class="badge k-${d.kind}">${DL_KIND[d.kind]}</span>${d.authority ? `<span>${esc(d.authority)}</span>` : ""}${d.alert_id ? `<a href="#" data-goto-alert="${d.alert_id}">dall'alert</a>` : ""}</div></div>
+      <div class="dl-acts"><button class="btn sm primary" data-accept="${d.id}">Conferma</button><button class="btn ghost sm" data-edit-dl="${d.id}">Modifica</button><button class="btn ghost sm" data-reject="${d.id}">Scarta</button></div></div>`).join("")}</div>` : "";
+
+  if (dlView === "month") { renderMonth(); return; }
+  const group = (cls, label, list, note = "") => list.length ? `<div class="dl-group ${cls}"><div class="eyebrow">${label} <b>${list.length}</b>${note}</div><div class="card">${list.map((d) => dlRow(d)).join("")}</div></div>` : "";
+  const done = dlItems({ includeDone: true }).filter((d) => d.status === "done").sort((a, b) => (b.done_at || b.due_date).localeCompare(a.done_at || a.due_date)).slice(0, 15);
+  const body = group("overdue", "Scadute", over) + group("", "Prossimi 7 giorni", week) + group("", "Entro 30 giorni", month) + group("", "Più avanti", later) +
+    (done.length ? `<details class="dl-group"><summary class="eyebrow" style="cursor:pointer;padding-bottom:8px">Completate di recente <b>${done.length}</b></summary><div class="card">${done.map((d) => dlRow(d)).join("")}</div></details>` : "");
+  $("#dl-body").innerHTML = body || `<div class="card"><div class="empty">${icon("cal")}<h3>Nessuna scadenza in agenda</h3><p>Aggiungi scadenze normative e segnalazioni periodiche, oppure fissa una scadenza interna nel triage di un alert: comparirà qui.</p>${canEdit() ? `<button class="btn primary sm" data-new-dl>${icon("plus")}Nuova scadenza</button>` : ""}</div></div>`;
+}
+
+function renderMonth() {
+  const base = calMonth || todayKey().slice(0, 7);
+  const [y, m] = base.split("-").map(Number);
+  const first = new Date(Date.UTC(y, m - 1, 1)), startDow = (first.getUTCDay() + 6) % 7;
+  const start = new Date(first.getTime() - startDow * 86400000);
+  const items = dlItems({ includeDone: true });
+  const byDay = {}; for (const d of items) (byDay[d.due_date] ||= []).push(d);
+  let cells = "";
+  for (let i = 0; i < 42; i++) {
+    const day = new Date(start.getTime() + i * 86400000), k = day.toISOString().slice(0, 10);
+    if (i >= 35 && day.getUTCMonth() !== m - 1) break;
+    const evs = byDay[k] || [];
+    cells += `<div class="cal-d ${day.getUTCMonth() !== m - 1 ? "out" : ""} ${k === todayKey() ? "today" : ""}"><span class="n">${day.getUTCDate()}</span><div class="evs" style="display:grid;gap:3px">
+      ${evs.slice(0, 3).map((d) => `<button class="cal-ev k-${d.kind} ${d.status === "done" ? "done" : ""}" ${d._type === "alert" ? `data-goto-alert="${d.alert_id}"` : `data-edit-dl="${d.id}"`} title="${esc(d.title)}">${esc(d.title)}</button>`).join("")}
+      ${evs.length > 3 ? `<span class="cal-more">+${evs.length - 3} altre</span>` : ""}</div></div>`;
+  }
+  const label = first.toLocaleDateString("it-IT", { month: "long", year: "numeric", timeZone: "UTC" }).replace(/^./, (c) => c.toUpperCase());
+  $("#dl-body").innerHTML = `<div class="card" style="overflow:hidden">
+    <div class="dlg-h" style="padding:12px 16px"><div class="cal-nav"><button class="btn ghost sm" data-cal="-1" aria-label="Mese precedente">${icon("left")}</button><b>${label}</b><button class="btn ghost sm" data-cal="1" aria-label="Mese successivo">${icon("right")}</button></div>
+      <button class="btn sm" data-cal="0" style="margin-left:auto">Oggi</button></div>
+    <div class="cal">${["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"].map((d) => `<div class="cal-h">${d}</div>`).join("")}${cells}</div></div>`;
+}
+
+function linkedDeadlinesHtml(a) {
+  if (!a) return "";
+  const list = deadlines.filter((d) => d.alert_id === a.id && d.status !== "proposed").map((d) => ({ ...d, _type: "dl" }));
+  const props = deadlines.filter((d) => d.alert_id === a.id && d.status === "proposed");
+  return (list.map((d) => dlRow(d, true)).join("") +
+    (props.length ? `<div class="ai-empty" style="border-top:1px solid var(--line)">${icon("spark")}<span>L'AI ha trovato ${props.length === 1 ? "una data" : props.length + " date"} in questo documento: confermale nello <a href="#deadlines">scadenziario</a>.</span></div>` : "")) ||
+    `<div class="ai-empty">${icon("cal")}<span>Nessuna scadenza collegata. ${a.due_date ? "La scadenza interna del triage compare già nello scadenziario." : ""}</span></div>`;
+}
+
+function openDlForm(d = null, fromAlert = null) {
+  editingDl = d;
+  const members = profiles.filter((p) => ["analyst", "admin"].includes(p.role));
+  $("#d-assignee").innerHTML = `<option value="">Nessuno</option>` + members.map((p) => `<option value="${p.id}">${esc(p.full_name || p.email)}${p.id === me.id ? " (tu)" : ""}</option>`).join("");
+  $("#dl-form-title").textContent = d ? (d.status === "proposed" ? "Rivedi la data proposta" : "Modifica scadenza") : "Nuova scadenza";
+  $("#d-title").value = d?.title || ""; $("#d-date").value = d?.due_date || "";
+  $("#d-assignee").value = d?.assignee || (d ? "" : me.id);
+  $$('input[name="d-kind"]').forEach((r) => (r.checked = r.value === (d?.kind || "regulatory")));
+  $("#d-authority").value = d?.authority || fromAlert?.source_authority || ""; $("#d-reg").value = d?.regulation || "";
+  $("#d-rec").value = d?.recurrence || "none"; $("#d-remind").value = String(d?.remind_days ?? 7);
+  if (![...$("#d-remind").options].some((o) => o.value === $("#d-remind").value)) $("#d-remind").value = "7";
+  $("#d-url").value = d?.url || fromAlert?.url || ""; $("#d-notes").value = d?.notes || "";
+  const linkId = d?.alert_id || fromAlert?.id;
+  const la = linkId && alerts.find((a) => a.id === linkId);
+  $("#dl-from-alert").hidden = !la; if (la) $("#dl-from-alert").innerHTML = `Collegata all'alert: <b>${esc(la.title)}</b>`;
+  $("#dlg-dl").dataset.alertId = linkId || "";
+  $("#b-del-dl").hidden = !d;
+  $("#dlg-dl").showModal(); $("#d-title").focus();
+}
+
+function exportIcs() {
+  const items = dlItems().filter((d) => d.status === "open");
+  const fold = (l) => l.replace(/(.{70})/g, "$1\r\n ").trimEnd();
+  const tx = (t) => String(t || "").replace(/\\/g, "\\\\").replace(/[,;]/g, (c) => "\\" + c).replace(/\n/g, "\\n");
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+  const ev = items.map((d) => {
+    const day = d.due_date.replace(/-/g, ""), next = new Date(Date.parse(d.due_date + "T00:00:00Z") + 86400000).toISOString().slice(0, 10).replace(/-/g, "");
+    const rr = { monthly: "FREQ=MONTHLY", quarterly: "FREQ=MONTHLY;INTERVAL=3", yearly: "FREQ=YEARLY" }[d.recurrence];
+    const desc = [DL_KIND[d.kind], d.authority, d.regulation, d.notes, d.url].filter(Boolean).join("\n");
+    return ["BEGIN:VEVENT", `UID:regalert-${d.id}@regalert`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${day}`, `DTEND;VALUE=DATE:${next}`,
+      fold(`SUMMARY:${tx((d._type === "alert" ? "Triage: " : "") + d.title)}`), fold(`DESCRIPTION:${tx(desc)}`), rr ? `RRULE:${rr}` : "",
+      "BEGIN:VALARM", "ACTION:DISPLAY", `TRIGGER:-P${d.remind_days ?? 7}D`, fold(`DESCRIPTION:${tx(d.title)}`), "END:VALARM", "END:VEVENT"].filter(Boolean).join("\r\n");
+  }).join("\r\n");
+  const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//RegAlert//Scadenziario//IT", "CALSCALE:GREGORIAN", "X-WR-CALNAME:RegAlert scadenziario", ev, "END:VCALENDAR"].filter(Boolean).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
+  a.download = `regalert-scadenziario-${todayKey()}.ics`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast(`${items.length} scadenze esportate: apri il file con Outlook o Google Calendar`);
+}
+
+function gotoAlert(id) {
+  tab = "open"; const a = alerts.find((x) => x.id === Number(id));
+  if (a && !isOpen(a)) tab = "done";
+  store.set("ra_tab", tab); clearFiltersSilently(); go("alerts"); select(Number(id));
+}
+function clearFiltersSilently() { ["#f-authority", "#f-tag", "#f-priority", "#q"].forEach((s) => ($(s).value = "")); $("#f-mine").setAttribute("aria-pressed", "false"); }
 
 // ---------------------------------------------------------------- CSV
 function exportCsv() {
@@ -1224,6 +1519,62 @@ $("#b-send-digest").onclick = async () => {
   try { const r = await callFn("digest", { mode: "daily" }); toast(r.sent ? `Digest inviato con ${r.sent} novità` : r.note, { bad: !r.sent && /canale/.test(r.note || "") }); }
   catch (err) { toast(err.message, { bad: true }); }
 };
+
+// ---------------------------------------------------------------- eventi: scadenziario
+$("#dl-v-list").onclick = () => { dlView = "list"; store.set("ra_dl_view", "list"); renderDeadlines(); };
+$("#dl-v-month").onclick = () => { dlView = "month"; store.set("ra_dl_view", "month"); renderDeadlines(); };
+["#dl-f-kind", "#dl-f-auth"].forEach((s) => $(s).addEventListener("change", renderDeadlines));
+["#dl-f-mine", "#dl-f-alerts"].forEach((s) => ($(s).onclick = (e) => { e.currentTarget.setAttribute("aria-pressed", e.currentTarget.getAttribute("aria-pressed") !== "true"); renderDeadlines(); }));
+$("#b-add-dl").onclick = () => openDlForm();
+$("#b-ics").onclick = exportIcs;
+$$("[data-close-dl]").forEach((b) => (b.onclick = () => $("#dlg-dl").close()));
+$("#f-dl").onsubmit = async (e) => {
+  e.preventDefault();
+  const row = { title: $("#d-title").value.trim(), due_date: $("#d-date").value, kind: $('input[name="d-kind"]:checked').value,
+    assignee: $("#d-assignee").value || null, authority: $("#d-authority").value.trim() || null, regulation: $("#d-reg").value.trim() || null,
+    recurrence: $("#d-rec").value, remind_days: Number($("#d-remind").value), url: $("#d-url").value.trim() || null, notes: $("#d-notes").value.trim() || null,
+    alert_id: Number($("#dlg-dl").dataset.alertId) || null };
+  if (!row.title || !row.due_date) return toast("Indica cosa scade e la data.", { bad: true });
+  if (row.url && !/^https?:\/\//.test(row.url)) return toast("Il link deve iniziare con https://", { bad: true });
+  if (editingDl?.status === "proposed") row.status = "open";
+  const res = editingDl ? await sb.from("ra_deadlines").update(row).eq("id", editingDl.id) : await sb.from("ra_deadlines").insert(row);
+  if (res.error) return toast("Scadenza non salvata: " + res.error.message, { bad: true });
+  $("#dlg-dl").close(); toast(editingDl ? "Scadenza aggiornata" : "Scadenza aggiunta"); await loadDeadlines();
+};
+$("#b-del-dl").onclick = async () => {
+  if (!editingDl) return; $("#dlg-dl").close();
+  if (!(await confirmBox("Eliminare la scadenza?", `"${editingDl.title}" verrà eliminata. Se è stata gestita, usa piuttosto "Completa": resta nello storico.`, "Elimina"))) return;
+  const { error } = await sb.from("ra_deadlines").delete().eq("id", editingDl.id);
+  error ? toast(error.message, { bad: true }) : (toast("Scadenza eliminata"), loadDeadlines());
+};
+document.addEventListener("click", async (e) => {
+  const t = e.target.closest("[data-complete],[data-reopen],[data-edit-dl],[data-accept],[data-reject],[data-goto-alert],[data-new-dl],[data-cal],#b-dl-from-alert");
+  if (!t || $("#v-app").hidden) return;
+  e.preventDefault();
+  const id = (k) => Number(t.dataset[k]);
+  if (t.dataset.complete) {
+    const { data, error } = await sb.rpc("ra_complete_deadline", { p_id: id("complete") });
+    if (error) return toast(error.message, { bad: true });
+    const nx = data && (await sb.from("ra_deadlines").select("due_date").eq("id", data).maybeSingle()).data;
+    toast(nx ? `Completata. Prossima scadenza: ${fullDate(nx.due_date + "T12:00:00Z", false)}` : "Scadenza completata"); loadDeadlines();
+  } else if (t.dataset.reopen) {
+    const { error } = await sb.from("ra_deadlines").update({ status: "open" }).eq("id", id("reopen"));
+    error ? toast(error.message, { bad: true }) : (toast("Scadenza riaperta"), loadDeadlines());
+  } else if (t.dataset.editDl) openDlForm(deadlines.find((d) => d.id === id("editDl")));
+  else if (t.dataset.accept) {
+    const { error } = await sb.from("ra_deadlines").update({ status: "open", assignee: me.id }).eq("id", id("accept"));
+    error ? toast(error.message, { bad: true }) : (toast("Aggiunta allo scadenziario"), loadDeadlines());
+  } else if (t.dataset.reject) {
+    const { error } = await sb.from("ra_deadlines").delete().eq("id", id("reject"));
+    error ? toast(error.message, { bad: true }) : (toast("Proposta scartata"), loadDeadlines());
+  } else if (t.dataset.gotoAlert) gotoAlert(t.dataset.gotoAlert);
+  else if (t.hasAttribute("data-new-dl")) openDlForm();
+  else if (t.dataset.cal !== undefined) {
+    const step = Number(t.dataset.cal);
+    if (!step) calMonth = null; else { const [y, m] = (calMonth || todayKey().slice(0, 7)).split("-").map(Number); const d = new Date(Date.UTC(y, m - 1 + step, 1)); calMonth = d.toISOString().slice(0, 7); }
+    renderMonth();
+  } else if (t.id === "b-dl-from-alert") openDlForm(null, alerts.find((a) => a.id === selectedId));
+});
 
 // aggiorna i tempi relativi ogni minuto
 setInterval(() => { if (me && !$("#v-app").hidden) { renderHealth(); if (!$("#view-alerts").hidden && !dirty) renderAlerts(); } }, 60000);

@@ -2,7 +2,7 @@
 // daily   → tutte le novità non ancora inviate (escluse quelle valutate "non pertinenti")
 // instant → solo rilevanza alta o priorità critica, appena arrivano
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
-import { type DigestAlert, digestHtml, sendEmail, sendTelegram } from "../_shared/notify.ts";
+import { type DigestAlert, type DigestDeadline, digestHtml, sendEmail, sendTelegram } from "../_shared/notify.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -55,7 +55,29 @@ Deno.serve(async (req) => {
   // se l'AI è attiva, aspetta che l'alert sia stato elaborato prima di inviarlo
   const aiOn = !!Deno.env.get("ANTHROPIC_API_KEY");
   const ready = (alerts ?? []).filter((a) => !aiOn || a.ai_processed_at) as (DigestAlert & { ai_processed_at: string })[];
-  if (!ready.length) return json({ sent: 0, note: "nessuna novità da inviare" });
+
+  // scadenziario (solo nel digest giornaliero): scadute o entro il preavviso di ciascuna scadenza, più le scadenze di triage degli alert
+  let deadlines: DigestDeadline[] = [];
+  if (!instant) {
+    const today = new Date(new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" }) + "T00:00:00Z");
+    const days = (d: string) => Math.round((Date.parse(d + "T00:00:00Z") - today.getTime()) / 86400000);
+    const horizon = new Date(today.getTime() + 90 * 86400000).toISOString().slice(0, 10);
+    const [{ data: dls }, { data: als }, { data: ppl }] = await Promise.all([
+      db.from("ra_deadlines").select("title,due_date,kind,authority,assignee,remind_days").eq("status", "open").lte("due_date", horizon),
+      db.from("ra_alerts_view").select("title,due_date,source_authority,assignee_name,status").not("due_date", "is", null)
+        .not("status", "in", "(closed,not_relevant)").lte("due_date", horizon),
+      db.from("ra_profiles").select("id,full_name,email"),
+    ]);
+    const nameOf = (id: string | null) => { const p = (ppl ?? []).find((x: { id: string }) => x.id === id); return p ? (p.full_name || p.email) : null; };
+    deadlines = [
+      ...(dls ?? []).filter((d) => days(d.due_date) <= d.remind_days)
+        .map((d) => ({ title: d.title, due_date: d.due_date, kind: d.kind, authority: d.authority, assignee_name: nameOf(d.assignee), days: days(d.due_date) })),
+      ...(als ?? []).filter((a) => days(a.due_date) <= 7)
+        .map((a) => ({ title: `Triage: ${a.title}`, due_date: a.due_date, kind: "internal", authority: a.source_authority, assignee_name: a.assignee_name, days: days(a.due_date) })),
+    ].sort((a, b) => a.days - b.days);
+  }
+
+  if (!ready.length && !deadlines.length) return json({ sent: 0, note: "nessuna novità né scadenza da inviare" });
 
   // ordina: prima rilevanza alta / priorità critica
   const rank = (a: DigestAlert) =>
@@ -78,21 +100,24 @@ Deno.serve(async (req) => {
 
   const date = new Date().toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Rome" });
   const heading = instant ? "RegAlert — novità ad alta rilevanza" : `RegAlert — digest del ${date}`;
-  if (dry_run) return json({ would_send: ready.length, emails, chats, preview_html: digestHtml(ready, DASHBOARD_URL, heading) });
+  if (dry_run) return json({ would_send: ready.length, deadlines: deadlines.length, emails, chats, preview_html: digestHtml(ready, DASHBOARD_URL, heading, deadlines) });
 
   const log: string[] = [];
-  try { log.push(await sendEmail(emails, `${heading} (${ready.length})`, digestHtml(ready, DASHBOARD_URL, heading))); }
+  const subject = [ready.length ? `${ready.length} novità` : "", deadlines.length ? `${deadlines.length} scadenze` : ""].filter(Boolean).join(", ");
+  try { log.push(await sendEmail(emails, `${heading} (${subject})`, digestHtml(ready, DASHBOARD_URL, heading, deadlines))); }
   catch (e) { log.push(`email: errore ${(e as Error).message}`); }
-  try { log.push(await sendTelegram(chats, ready, heading)); }
+  try { log.push(await sendTelegram(chats, ready, heading, deadlines)); }
   catch (e) { log.push(`telegram: errore ${(e as Error).message}`); }
 
   // segna come inviati solo se almeno un canale ha consegnato davvero
   const delivered = log.some((l) => l.startsWith("email: inviata") || l.startsWith("telegram: inviato"));
   if (!delivered) return json({ sent: 0, note: "nessun canale ha consegnato: le novità restano in coda", log });
 
-  await db.from("ra_alerts")
-    .update(instant ? { notified_instant_at: new Date().toISOString() } : { notified_daily_at: new Date().toISOString() })
-    .in("id", ready.map((a) => a.id));
+  if (ready.length) {
+    await db.from("ra_alerts")
+      .update(instant ? { notified_instant_at: new Date().toISOString() } : { notified_daily_at: new Date().toISOString() })
+      .in("id", ready.map((a) => a.id));
+  }
 
-  return json({ sent: ready.length, log });
+  return json({ sent: ready.length, deadlines: deadlines.length, log });
 });
