@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>RegAlert</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%226%22 fill=%22%231d5c8a%22/%3E%3Cpath d=%22M9 23V9h8a4 4 0 0 1 0 8h-8m7 0 6 6%22 stroke=%22white%22 stroke-width=%222.5%22 fill=%22none%22/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
@@ -564,7 +565,7 @@ $("#f-auth").onsubmit = async (e) => {
   const email = $("#a-email").value.trim(), password = $("#a-pass").value;
   $("#a-submit").disabled = true; $("#a-msg").textContent = "";
   const res = signup
-    ? await sb.auth.signUp({ email, password, options: { data: { full_name: $("#a-name").value.trim(), app: "regalert" } } })
+    ? await sb.auth.signUp({ email, password, options: { data: { full_name: $("#a-name").value.trim(), app: "regalert" }, emailRedirectTo: location.origin + location.pathname } })
     : await sb.auth.signInWithPassword({ email, password });
   $("#a-submit").disabled = false;
   if (res.error) { $("#a-msg").textContent = res.error.message === "Invalid login credentials" ? "Email o password non corretti." : res.error.message; return; }

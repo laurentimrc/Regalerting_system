@@ -8,7 +8,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const CRON_SECRET = Deno.env.get("CRON_SECRET");
-const DASHBOARD_URL = Deno.env.get("DASHBOARD_URL") ?? null;
+const DASHBOARD_URL_ENV = Deno.env.get("DASHBOARD_URL") ?? null;
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -72,6 +72,9 @@ Deno.serve(async (req) => {
     ...String(extra?.value ?? "").split(/[,;\s]+/).filter((e) => e.includes("@")),
   ])];
   const chats = people.map((p) => p.telegram_chat_id).filter(Boolean) as string[];
+
+  const { data: dash } = await db.from("ra_settings").select("value").eq("key", "dashboard_url").maybeSingle();
+  const DASHBOARD_URL = DASHBOARD_URL_ENV ?? dash?.value ?? null;
 
   const date = new Date().toLocaleDateString("it-IT", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Rome" });
   const heading = instant ? "RegAlert — novità ad alta rilevanza" : `RegAlert — digest del ${date}`;
