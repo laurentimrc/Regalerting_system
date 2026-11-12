@@ -1,0 +1,31 @@
+-- RegAlert — fonti iniziali (UE e Italia). Modificabili dalla dashboard.
+-- kind: rss = feed ufficiale · links = nuovi link su una pagina-elenco · page = modifiche al testo di una pagina
+insert into ra_sources (name, authority, jurisdiction, url, kind, link_pattern, tags, check_every_minutes) values
+  ('EBA — News e comunicati (RSS)', 'EBA', 'EU',
+   'https://www.eba.europa.eu/news-press/news/rss.xml', 'rss', null,
+   '{MiCAR,AML,DORA}', 180),
+  ('ESMA — News', 'ESMA', 'EU',
+   'https://www.esma.europa.eu/press-news/esma-news', 'links', '/press-news/esma-news/.+',
+   '{MiCAR,MiFID II,Market Abuse}', 180),
+  ('ESMA — Pagina MiCA', 'ESMA', 'EU',
+   'https://www.esma.europa.eu/esmas-activities/digital-finance-and-innovation/markets-crypto-assets-regulation-mica', 'page', null,
+   '{MiCAR}', 720),
+  ('Banca d''Italia — Archivio norme di vigilanza', 'Banca d''Italia', 'IT',
+   'https://www.bancaditalia.it/compiti/vigilanza/normativa/archivio-norme/index.html', 'links',
+   '/vigilanza/normativa/archivio-norme/[^/]+/[^/]+/',
+   '{Vigilanza,MiCAR}', 360),
+  ('Banca d''Italia — Comunicazioni antiriciclaggio', 'Banca d''Italia', 'IT',
+   'https://www.bancaditalia.it/compiti/supervisione-normativa-antiriciclaggio/comunicazioni/index.html', 'links',
+   '/supervisione-normativa-antiriciclaggio/comunicazioni/\d{8}',
+   '{AML}', 360),
+  ('Banca d''Italia — Consultazioni vigilanza', 'Banca d''Italia', 'IT',
+   'https://www.bancaditalia.it/compiti/vigilanza/normativa/consultazioni/index.html', 'links',
+   '/vigilanza/normativa/consultazioni/\d{4}',
+   '{Vigilanza}', 720),
+  ('Consob — Comunicati stampa', 'Consob', 'IT',
+   'https://www.consob.it/web/consob/comunicati-stampa', 'links', '/w/comunicato-stampa',
+   '{MiCAR,Market Abuse,MiFID II}', 360),
+  ('UIF — Novità (avvisi e comunicati)', 'UIF', 'IT',
+   'https://uif.bancaditalia.it/', 'links', 'uif\.bancaditalia\.it/pubblicazioni/',
+   '{AML}', 720)
+on conflict (url) do nothing;
