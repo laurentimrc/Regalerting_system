@@ -86,6 +86,10 @@ Deno.serve(async (req) => {
   try { log.push(await sendTelegram(chats, ready, heading)); }
   catch (e) { log.push(`telegram: errore ${(e as Error).message}`); }
 
+  // segna come inviati solo se almeno un canale ha consegnato davvero
+  const delivered = log.some((l) => l.startsWith("email: inviata") || l.startsWith("telegram: inviato"));
+  if (!delivered) return json({ sent: 0, note: "nessun canale ha consegnato: le novità restano in coda", log });
+
   await db.from("ra_alerts")
     .update(instant ? { notified_instant_at: new Date().toISOString() } : { notified_daily_at: new Date().toISOString() })
     .in("id", ready.map((a) => a.id));
