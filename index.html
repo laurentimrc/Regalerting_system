@@ -416,6 +416,9 @@ details.adv[open] summary { margin-bottom: 12px; }
 .auth-form { width: 100%; max-width: 380px; display: grid; gap: 16px; }
 .auth-form h2 { font-size: 24px; }
 .auth-form .sub { margin: -8px 0 4px; color: var(--muted); }
+.lbl-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.link-btn { border: 0; background: none; color: var(--accent); font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; padding: 0; }
+.link-btn:hover { text-decoration: underline; }
 .auth-switch { text-align: center; font-size: 13.5px; color: var(--muted); }
 .auth-switch button { border: 0; background: none; color: var(--accent); font: inherit; font-weight: 500; cursor: pointer; padding: 0; }
 .msg { font-size: 13.5px; padding: 10px 12px; border-radius: 8px; }
@@ -554,12 +557,25 @@ details.adv[open] summary { margin-bottom: 12px; }
       <p class="sub" id="a-sub">Usa l'account del team compliance.</p>
       <div class="field" id="fld-name" hidden><label for="a-name">Nome e cognome</label><input id="a-name" autocomplete="name"></div>
       <div class="field"><label for="a-email">Email</label><input id="a-email" type="email" required autocomplete="email"></div>
-      <div class="field"><label for="a-pass">Password</label><input id="a-pass" type="password" required minlength="8" autocomplete="current-password"><span class="hint" id="a-pass-hint" hidden>Almeno 8 caratteri.</span></div>
+      <div class="field" id="fld-pass"><div class="lbl-row"><label for="a-pass">Password</label><button type="button" class="link-btn" id="a-forgot">Password dimenticata?</button></div><input id="a-pass" type="password" required minlength="8" autocomplete="current-password"><span class="hint" id="a-pass-hint" hidden>Almeno 8 caratteri.</span></div>
       <div id="a-msg" class="msg" hidden></div>
       <button class="btn primary" id="a-submit" style="justify-content:center;padding:10px">Accedi</button>
       <p class="auth-switch"><span id="a-switch-text">Prima volta qui?</span> <button type="button" id="a-switch">Crea un account</button></p>
     </form>
   </section>
+</div>
+
+<!-- nuova password, dal link ricevuto per email -->
+<div id="v-reset" class="auth-side" style="min-height:100%" hidden>
+  <form class="auth-form" id="f-reset" novalidate>
+    <div class="logo-mark" style="width:48px;height:48px"><svg style="width:24px;height:24px"><use href="#i-logo"/></svg></div>
+    <div><h2>Scegli una nuova password</h2></div>
+    <p class="sub" id="r-sub">Vale per il tuo account <b id="r-email"></b>.</p>
+    <div class="field"><label for="r-pass">Nuova password</label><input id="r-pass" type="password" required minlength="8" autocomplete="new-password"><span class="hint">Almeno 8 caratteri.</span></div>
+    <div class="field"><label for="r-pass2">Ripeti la password</label><input id="r-pass2" type="password" required minlength="8" autocomplete="new-password"></div>
+    <div id="r-msg" class="msg" hidden></div>
+    <button class="btn primary" id="r-submit" style="justify-content:center;padding:10px">Salva e accedi</button>
+  </form>
 </div>
 
 <!-- in attesa -->
@@ -896,7 +912,7 @@ function confirmBox(title, text, yes) {
     d.showModal();
   });
 }
-const show = (id) => ["v-config", "v-auth", "v-pending", "v-offline", "v-app"].forEach((v) => ($("#" + v).hidden = v !== id));
+const show = (id) => ["v-config", "v-auth", "v-pending", "v-offline", "v-reset", "v-app"].forEach((v) => ($("#" + v).hidden = v !== id));
 
 // ---------------------------------------------------------------- stato
 let sb, me, profiles = [], sources = [], alerts = [], selectedId = null, tab = "open", dirty = false;
@@ -911,9 +927,25 @@ function resolveConfig() {
 async function boot() {
   const cfg = resolveConfig();
   if (!cfg) { show("v-config"); return; }
+  // link dell'email di recupero: arriva con #...type=recovery (oppure con un errore, se scaduto o già usato)
+  const hp = new URLSearchParams(location.hash.slice(1));
+  const recovering = hp.get("type") === "recovery";
+  const linkError = hp.get("error_code") || hp.get("error");
   sb = supabase.createClient(cfg.url, cfg.key);
-  sb.auth.onAuthStateChange((ev) => { if (ev === "SIGNED_OUT") { me = null; show("v-auth"); } });
+  sb.auth.onAuthStateChange((ev, s) => {
+    if (ev === "SIGNED_OUT") { me = null; show("v-auth"); }
+    if (ev === "PASSWORD_RECOVERY") showReset(s);
+  });
   const { data: { session } } = await sb.auth.getSession();
+  if (linkError) {
+    history.replaceState(null, "", location.pathname);
+    if (!session) {
+      show("v-auth"); setAuthMode("forgot");
+      authMsg(/expired|otp/i.test(linkError + hp.get("error_description")) ? "Il link è scaduto o è già stato usato. Inserisci la tua email per riceverne uno nuovo." : "Il link non è valido. Richiedine uno nuovo.", true);
+      return;
+    }
+  }
+  if (recovering && session) { showReset(session); return; }
   if (!session) { show("v-auth"); return; }
   if (!navigator.onLine) { show("v-offline"); return; }
   await enter();
@@ -1922,21 +1954,37 @@ function exportCsv() {
 }
 
 // ---------------------------------------------------------------- eventi: accesso
-let signup = false;
+let signup = false, authMode = "login";
 function authMsg(t, bad) { const m = $("#a-msg"); m.hidden = !t; m.textContent = t || ""; m.className = "msg " + (bad ? "err" : "ok"); }
-$("#a-switch").onclick = () => {
-  signup = !signup;
-  $("#fld-name").hidden = !signup; $("#a-pass-hint").hidden = !signup;
-  $("#a-title").textContent = signup ? "Crea il tuo account" : "Accedi";
-  $("#a-sub").textContent = signup ? "Il primo iscritto diventa amministratore; gli altri vengono approvati da lui." : "Usa l'account del team compliance.";
-  $("#a-submit").textContent = signup ? "Crea account" : "Accedi";
-  $("#a-switch").textContent = signup ? "Accedi" : "Crea un account"; $("#a-switch-text").textContent = signup ? "Hai già un account?" : "Prima volta qui?";
-  $("#a-pass").autocomplete = signup ? "new-password" : "current-password"; authMsg("");
-};
+// modalità del modulo di accesso: login | signup | forgot
+function setAuthMode(mode) {
+  authMode = mode; signup = mode === "signup";
+  const T = {
+    login: ["Accedi", "Usa l'account del team compliance.", "Accedi", "Prima volta qui?", "Crea un account"],
+    signup: ["Crea il tuo account", "Il primo iscritto diventa amministratore; gli altri vengono approvati da lui.", "Crea account", "Hai già un account?", "Accedi"],
+    forgot: ["Recupera la password", "Inserisci l'email del tuo account: ti mandiamo un link per sceglierne una nuova.", "Invia il link", "Ti è tornata in mente?", "Accedi"],
+  }[mode];
+  $("#a-title").textContent = T[0]; $("#a-sub").textContent = T[1]; $("#a-submit").textContent = T[2];
+  $("#a-switch-text").textContent = T[3]; $("#a-switch").textContent = T[4];
+  $("#fld-name").hidden = mode !== "signup"; $("#a-pass-hint").hidden = mode !== "signup";
+  $("#fld-pass").hidden = mode === "forgot"; $("#a-forgot").hidden = mode !== "login";
+  $("#a-pass").autocomplete = mode === "signup" ? "new-password" : "current-password"; authMsg("");
+}
+$("#a-switch").onclick = () => setAuthMode(authMode === "login" ? "signup" : "login");
+$("#a-forgot").onclick = () => { setAuthMode("forgot"); $("#a-email").focus(); };
 $("#f-auth").onsubmit = async (e) => {
   e.preventDefault();
   const email = $("#a-email").value.trim(), password = $("#a-pass").value;
   if (!/^\S+@\S+\.\S+$/.test(email)) return authMsg("Inserisci un indirizzo email valido.", true);
+  if (authMode === "forgot") {
+    $("#a-submit").disabled = true; authMsg("");
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+    $("#a-submit").disabled = false;
+    // stesso messaggio che l'account esista o no, per non rivelare quali email sono registrate
+    if (error && /rate|seconds|too many/i.test(error.message)) return authMsg("Hai già chiesto un link da poco: attendi qualche minuto e riprova.", true);
+    if (error && !/not found|user/i.test(error.message)) return authMsg("Non riesco a inviare l'email in questo momento. Riprova più tardi.", true);
+    return authMsg(`Se ${email} corrisponde a un account, tra poco ricevi un'email con il link per scegliere una nuova password. Controlla anche lo spam; il link vale una sola volta.`, false);
+  }
   if (password.length < 8) return authMsg("La password deve avere almeno 8 caratteri.", true);
   $("#a-submit").disabled = true; authMsg("");
   const res = signup
@@ -1953,6 +2001,27 @@ $("#f-auth").onsubmit = async (e) => {
 $("#f-config").onsubmit = (e) => { e.preventDefault(); store.set("ra_url", $("#cfg-url").value.trim().replace(/\/$/, "")); store.set("ra_key", $("#cfg-key").value.trim()); boot(); };
 $("#b-logout").onclick = $("#p-logout").onclick = () => sb.auth.signOut();
 $("#p-reload").onclick = () => location.reload();
+
+// nuova password dal link di recupero
+function showReset(session) {
+  history.replaceState(null, "", location.pathname);
+  $("#r-email").textContent = session?.user?.email || "";
+  $("#r-msg").hidden = true; $("#r-pass").value = $("#r-pass2").value = "";
+  show("v-reset"); setTimeout(() => $("#r-pass").focus(), 50);
+}
+$("#f-reset").onsubmit = async (e) => {
+  e.preventDefault();
+  const p1 = $("#r-pass").value, p2 = $("#r-pass2").value, m = $("#r-msg");
+  const err = (t) => { m.hidden = false; m.className = "msg err"; m.textContent = t; };
+  if (p1.length < 8) return err("La password deve avere almeno 8 caratteri.");
+  if (p1 !== p2) return err("Le due password non coincidono.");
+  $("#r-submit").disabled = true;
+  const { error } = await sb.auth.updateUser({ password: p1 });
+  $("#r-submit").disabled = false;
+  if (error) return err(/different|same/i.test(error.message) ? "Scegli una password diversa da quella precedente." : /weak|pwned|leaked/i.test(error.message) ? "Password troppo debole o già comparsa in fughe di dati: scegline un'altra." : /session|expired|jwt/i.test(error.message) ? "Il link è scaduto: torna all'accesso e richiedine uno nuovo." : error.message);
+  toast("Password aggiornata");
+  await enter();
+};
 
 // ---------------------------------------------------------------- eventi: navigazione
 $("#nav").onclick = (e) => { const v = e.target.closest("button")?.dataset.view; if (v) go(v); };
