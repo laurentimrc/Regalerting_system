@@ -3,6 +3,7 @@
 // instant → solo rilevanza alta o priorità critica, appena arrivano
 import { createClient } from "npm:@supabase/supabase-js@2.49.4";
 import { type DigestAlert, type DigestDeadline, digestHtml, sendEmail, sendTelegram } from "../_shared/notify.ts";
+import { corsHeaders } from "../_shared/net.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -10,10 +11,7 @@ const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const CRON_SECRET = Deno.env.get("CRON_SECRET");
 const DASHBOARD_URL_ENV = Deno.env.get("DASHBOARD_URL") ?? null;
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
-};
+let cors: Record<string, string> = {};   // impostate per ogni richiesta: solo l'origine della dashboard
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
@@ -34,6 +32,7 @@ async function authorize(req: Request) {
 }
 
 Deno.serve(async (req) => {
+  cors = corsHeaders(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (!(await authorize(req))) return json({ error: "non autorizzato" }, 401);
 

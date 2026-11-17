@@ -6,6 +6,7 @@ import {
   discoverFeed, extractLinks, extractText, formatDiff, type Item, lineDiff, looksLikeFeed, parseFeed, sha256, stripHtml,
 } from "../_shared/parse.ts";
 import { enrich } from "../_shared/ai.ts";
+import { corsHeaders, safeFetch } from "../_shared/net.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -18,10 +19,7 @@ const BURST_LIMIT = 25;       // oltre questa soglia di link nuovi → un solo a
 const FIRST_RUN_DAYS = 7;     // al primo giro, dai feed si importano solo le uscite recenti
 const AI_BATCH = 15;
 
-const cors = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
-};
+let cors: Record<string, string> = {};   // impostate per ogni richiesta: solo l'origine della dashboard
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
@@ -32,20 +30,11 @@ interface Source {
   check_every_minutes: number;
 }
 
+// scarica solo da siti pubblici: niente IP interni, localhost o servizi di metadati, anche dopo un redirect
 async function fetchText(url: string) {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 25_000);
-  try {
-    const res = await fetch(url, {
-      signal: ctrl.signal,
-      redirect: "follow",
-      headers: { "User-Agent": UA, Accept: "text/html,application/xhtml+xml,application/rss+xml,application/xml;q=0.9,*/*;q=0.8", "Accept-Language": "it,en;q=0.8" },
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return { body: await res.text(), contentType: res.headers.get("content-type") ?? "", finalUrl: res.url || url };
-  } finally {
-    clearTimeout(t);
-  }
+  return await safeFetch(url, {
+    headers: { "User-Agent": UA, Accept: "text/html,application/xhtml+xml,application/rss+xml,application/xml;q=0.9,*/*;q=0.8", "Accept-Language": "it,en;q=0.8" },
+  });
 }
 
 async function authorize(req: Request): Promise<boolean> {
@@ -122,7 +111,7 @@ async function processSource(db: SupabaseClient, s: Source) {
     const rows = newItems.map((i) => ({
       source_id: s.id,
       fingerprint: i.fingerprint.slice(0, 1000),
-      url: i.url,
+      url: i.url && /^https?:\/\//i.test(i.url) ? i.url.slice(0, 2048) : null,
       title: i.title.slice(0, 500),
       excerpt: i.excerpt,
       diff: (i as Item & { diff?: string }).diff ?? null,
@@ -223,6 +212,7 @@ async function testUrl(url: string) {
 }
 
 Deno.serve(async (req) => {
+  cors = corsHeaders(req);
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (!(await authorize(req))) return json({ error: "non autorizzato" }, 401);
 

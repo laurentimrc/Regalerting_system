@@ -1,7 +1,7 @@
 // RegAlert — service worker: rende l'app installabile e la apre anche senza rete.
 // Solo l'interfaccia viene salvata sul telefono: i dati (Supabase) passano sempre dalla rete e non finiscono in cache.
-const VERSION = "ra-v1";
-const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon.svg"];
+const VERSION = "ra-v2";
+const SHELL = ["./", "./index.html", "./app.js", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/icon.svg"];
 const CDN = ["cdn.jsdelivr.net", "cdnjs.cloudflare.com", "fonts.googleapis.com", "fonts.gstatic.com"];
 
 self.addEventListener("install", (e) => {
@@ -19,6 +19,12 @@ self.addEventListener("fetch", (e) => {
   if (req.mode === "navigate") {
     e.respondWith(fetch(req).then((r) => { const c = r.clone(); caches.open(VERSION).then((k) => k.put("./index.html", c)); return r; })
       .catch(() => caches.match("./index.html")));
+    return;
+  }
+  // codice dell'app: sempre la versione appena pubblicata, la copia salvata solo se offline
+  if (url.origin === self.location.origin && url.pathname.endsWith("/app.js")) {
+    e.respondWith(fetch(req).then((r) => { if (r.ok) { const c = r.clone(); caches.open(VERSION).then((k) => k.put(req, c)); } return r; })
+      .catch(() => caches.match(req)));
     return;
   }
   // librerie e font con versione fissa: dalla cache, scaricati la prima volta

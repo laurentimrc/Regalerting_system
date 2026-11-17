@@ -12,6 +12,7 @@ Monitoraggio normativo per il team compliance: raccoglie le novità da autorità
 | Permessi | `supabase/migrations/004_hardening.sql` | Funzioni interne non chiamabili via API, utenti anonimi esclusi |
 | Calendario controlli | `supabase/migrations/006_controls.sql` | Tipo Controllo, frequenze settimanale e semestrale, area, funzione responsabile esterna, lotti di importazione |
 | Presidi continuativi | `supabase/migrations/007_continuous.sql` | Attestazione mensile dei presidi continuativi, esito (conforme / con rilievi) e note per ogni controllo completato |
+| Sicurezza | `supabase/migrations/009_security.sql`, `010_security_events.sql`, `011_revoke_trigger_fns.sql` | Verifica in due passaggi (TOTP) con livello aal2 richiesto dalle policy, obbligo MFA attivabile dall'admin, registro di sicurezza non modificabile (accessi, ruoli, fonti, impostazioni, cancellazioni, esportazioni), protezione dell'ultimo admin, colonne del profilo modificabili limitate, fonti solo su indirizzi pubblici |
 | Registro attestazioni | `supabase/migrations/008_attestations.sql` | Ogni attestazione di presidio o controllo riceve numero progressivo (ATT-AAAA-NNNNN), ID univoco e impronta SHA-256 concatenata alla precedente; registro non modificabile, verifica della catena con `ra_verify_attestations()`, export PDF (singola attestazione e registro mensile) e CSV dalla dashboard |
 | Scadenziario | `supabase/migrations/005_deadlines.sql` | Scadenze normative, segnalazioni, consultazioni e interne; ricorrenze; proposte AI da confermare |
 | Raccolta | `supabase/functions/collect` | Feed RSS/Atom, nuovi link su pagine-elenco, diff del testo di pagine; sintesi AI |
@@ -60,3 +61,12 @@ La dashboard si installa come app su iPhone e Android: icona sulla schermata Hom
 - **iPhone / iPad**: apri la dashboard in Safari → *Condividi* → *Aggiungi alla schermata Home*.
 
 File: `manifest.webmanifest`, `sw.js` (salva solo l'interfaccia; i dati Supabase passano sempre dalla rete e non restano sul telefono), `icons/`. Senza rete l'app mostra una schermata dedicata e si ricollega da sola. Per forzare l'aggiornamento dopo una modifica a `sw.js`, cambia `VERSION`.
+
+## Sicurezza
+
+- **Accesso**: verifica in due passaggi con app di autenticazione (Team → Sicurezza dell'account); l'admin può renderla obbligatoria (Impostazioni → Sicurezza della piattaforma). Senza il secondo passaggio le policy RLS trattano l'utente come "in attesa" e non restituiscono dati.
+- **Sessioni**: uscita automatica dopo un periodo di inattività configurabile (15 min – 2 ore); cambio password con chiusura delle altre sessioni; password di almeno 12 caratteri.
+- **Registro di sicurezza** (`ra_audit_log`, solo admin, append-only): accessi, codici MFA errati, ruoli, fonti, impostazioni, cancellazioni e riaperture, esportazioni di PDF e CSV.
+- **Raccoglitore**: scarica solo da siti pubblici (`_shared/net.ts`): niente IP privati, localhost, servizi di metadati o domini Supabase, anche dopo un redirect; risposte limitate a 6 MB; il testo raccolto è passato all'AI come dato, non come istruzioni.
+- **Dashboard**: Content Security Policy senza script inline, librerie da CDN con Subresource Integrity, link solo http(s), celle CSV protette dall'esecuzione di formule.
+- **Da configurare nel pannello Supabase** (Authentication): protezione password compromesse, lunghezza minima 12, Redirect URLs, SMTP personalizzato, durata massima della sessione.

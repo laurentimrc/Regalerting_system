@@ -122,6 +122,7 @@ function titleFromUrl(u: URL): string {
 export function extractLinks(html: string, baseUrl: string, selector?: string | null, pattern?: string | null): LinkItem[] {
   const { el } = root(html, selector);
   const base = new URL(baseUrl);
+  if (pattern && pattern.length > 300) throw new Error("Pattern dei link troppo lungo (max 300 caratteri)");
   const re = pattern ? new RegExp(pattern, "i") : null;
   const seen = new Map<string, string>();
   for (const a of Array.from(el.querySelectorAll("a[href]")) as Element[]) {
