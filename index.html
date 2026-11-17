@@ -244,7 +244,7 @@ pre.diff .del { color: var(--crit); background: var(--crit-soft); display: block
 .shortcuts { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; font-size: 12.5px; margin-top: 8px; }
 
 /* pagine (fonti, team, impostazioni) */
-.page { max-width: 1040px; margin: 0 auto; padding: 24px 32px 48px; display: grid; gap: 20px; }
+.page { max-width: 1040px; margin: 0 auto; padding: 24px 32px 48px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
 .page-h { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
 .page-h p { margin: 4px 0 0; color: var(--muted); max-width: 620px; }
 .page-h .spacer { flex: 1; }
@@ -269,7 +269,7 @@ pre.diff .del { color: var(--crit); background: var(--crit-soft); display: block
 .src.paused { opacity: .6; }
 .panel { padding: 20px; display: grid; gap: 16px; }
 .panel h3 { font-size: 16px; }
-.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; align-items: start; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: 14px; align-items: start; }
 .members { display: grid; }
 .member { display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); }
 .member:last-child { border-bottom: 0; }
@@ -304,7 +304,7 @@ pre.diff .del { color: var(--crit); background: var(--crit-soft); display: block
 .datebox.soon { border-color: var(--high); } .datebox.soon span { background: var(--high); color: #fff; }
 .dl-title { font-weight: 600; overflow-wrap: anywhere; }
 .dl-meta { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 12.5px; color: var(--muted); margin-top: 3px; }
-.dl-acts { display: flex; gap: 4px; align-items: center; }
+.dl-acts { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; min-width: 0; }
 .when { font-weight: 600; font-size: 12.5px; white-space: nowrap; }
 .when.over { color: var(--crit); } .when.soon { color: var(--high); } .when.later { color: var(--muted); font-weight: 500; }
 .k-regulatory { color: #1f4fa3; background: #e6eefb; } .k-reporting { color: #8a4b08; background: #fdf0df; } .k-consultation { color: #0b6e5c; background: #e0f3ee; } .k-internal { color: #5b4a8b; background: #eeeaf8; } .k-control { color: #8a2d4b; background: #fbe8ee; }
@@ -332,6 +332,7 @@ pre.diff .del { color: var(--crit); background: var(--crit-soft); display: block
 .kinds.kinds4 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 /* presidi continuativi */
 .presidi .ph { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+.presidi .ph > * { min-width: 0; } .presidi .ph .hint { overflow-wrap: anywhere; } .presidi { overflow: hidden; }
 .presidi .ph h3 { font-size: 15px; }
 .progress { flex: 1 1 160px; max-width: 260px; height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
 .progress i { display: block; height: 100%; background: var(--ok); border-radius: 99px; }
@@ -391,7 +392,7 @@ table.prev tr.bad td { background: var(--crit-soft); }
   .cal-d { min-height: 64px; padding: 4px; } .cal-ev { font-size: 0; padding: 0; width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
   .cal-d .evs { display: flex; flex-wrap: wrap; gap: 3px; } .cal-more { display: none; }
   .dl { grid-template-columns: 48px minmax(0, 1fr); } .dl-acts { grid-column: 2; } .datebox { width: 48px; }
-  .kinds.kinds4 { grid-template-columns: 1fr 1fr; }
+  .kinds.kinds4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* dialog */
@@ -403,8 +404,8 @@ dialog::backdrop { background: rgba(10, 18, 32, .45); }
 .dlg-b { padding: 20px; display: grid; gap: 16px; overflow-y: auto; }
 .dlg-f { display: flex; gap: 8px; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid var(--line); background: var(--surface-2); }
 .kinds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.kind { border: 1px solid var(--line-strong); border-radius: 10px; padding: 10px 12px; cursor: pointer; display: grid; gap: 2px; }
-.kind input { position: absolute; opacity: 0; pointer-events: none; }
+.kind { position: relative; border: 1px solid var(--line-strong); border-radius: 10px; padding: 10px 12px; cursor: pointer; display: grid; gap: 2px; }
+.kind input { position: absolute; left: 0; top: 0; width: 1px; height: 1px; margin: 0; opacity: 0; pointer-events: none; }
 .kind b { font-size: 13.5px; }
 .kind span { font-size: 12px; color: var(--muted); line-height: 1.35; }
 .kind:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
@@ -504,6 +505,21 @@ details.adv[open] summary { margin-bottom: 12px; }
   input, select, textarea { font-size: 16px; }   /* evita lo zoom automatico di iOS */
 }
 @media (display-mode: standalone) { body { overscroll-behavior-y: none; } }
+/* telefono: niente scorrimento orizzontale della pagina; solo la fila delle schede scorre, dentro di sé */
+@media (max-width: 860px) {
+  html, body, .app, .main, .content { overflow-x: hidden; }
+  .content { overscroll-behavior-x: none; touch-action: pan-y pinch-zoom; }
+  .tabs { overscroll-behavior-x: contain; scrollbar-width: none; }
+  .tabs::-webkit-scrollbar { display: none; }
+  .page-h > *, .dl, .pr, .src, .member { min-width: 0; }
+  .dl-toolbar { width: 100%; }
+  .field, .grid2 > * { min-width: 0; }
+  input, select, textarea { max-width: 100%; min-width: 0; }
+  input[type="date"] { -webkit-appearance: none; appearance: none; width: 100%; min-height: 40px; }
+  .dlg-b { overflow-x: hidden; }
+  .dlg-h { flex-wrap: wrap; min-width: 0; }
+  .cal-nav b { min-width: 0; font-size: 15px; }
+}
 @media (max-width: 520px) { .props { grid-template-columns: 1fr 1fr; } .member { grid-template-columns: 36px minmax(0, 1fr); } .member select, .member .role-txt { grid-column: 2; justify-self: start; } }
 </style>
 </head>
@@ -1499,7 +1515,7 @@ function renderPresidi(list) {
       <div><h3>Presidi continuativi</h3><div class="hint">Attestazione di ${monthLbl} · ${late ? `<span style="color:var(--crit);font-weight:600">${late} in ritardo</span>` : `entro il ${fullDate(period + "T12:00:00Z", false)} (${whenTxt(n)})`}</div></div>
       <div class="progress" aria-label="${attested.length} di ${total} attestati"><i style="width:${total ? Math.round(attested.length / total * 100) : 0}%"></i></div>
       <b class="mono">${attested.length}/${total}</b><span class="hint">attestati</span>
-      <span style="margin-left:auto;display:flex;gap:6px">
+      <span style="margin-left:auto;display:flex;flex-wrap:wrap;gap:6px;min-width:0">
         <button type="button" class="btn ghost sm" id="b-pres-csv" title="Registro numerato delle attestazioni, esportabile in PDF e CSV">${icon("doc")}Registro</button>
         ${canEdit() && pending.length ? `<button type="button" class="btn sm" id="b-pres-all">${icon("check")}Attesta tutti conformi</button>` : ""}
       </span>
