@@ -12,6 +12,7 @@ Monitoraggio normativo per il team compliance: raccoglie le novità da autorità
 | Permessi | `supabase/migrations/004_hardening.sql` | Funzioni interne non chiamabili via API, utenti anonimi esclusi |
 | Calendario controlli | `supabase/migrations/006_controls.sql` | Tipo Controllo, frequenze settimanale e semestrale, area, funzione responsabile esterna, lotti di importazione |
 | Presidi continuativi | `supabase/migrations/007_continuous.sql` | Attestazione mensile dei presidi continuativi, esito (conforme / con rilievi) e note per ogni controllo completato |
+| Registro attestazioni | `supabase/migrations/008_attestations.sql` | Ogni attestazione di presidio o controllo riceve numero progressivo (ATT-AAAA-NNNNN), ID univoco e impronta SHA-256 concatenata alla precedente; registro non modificabile, verifica della catena con `ra_verify_attestations()`, export PDF (singola attestazione e registro mensile) e CSV dalla dashboard |
 | Scadenziario | `supabase/migrations/005_deadlines.sql` | Scadenze normative, segnalazioni, consultazioni e interne; ricorrenze; proposte AI da confermare |
 | Raccolta | `supabase/functions/collect` | Feed RSS/Atom, nuovi link su pagine-elenco, diff del testo di pagine; sintesi AI |
 | Notifiche | `supabase/functions/digest` | Digest giornaliero e avvisi immediati via Resend e Telegram |

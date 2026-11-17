@@ -346,6 +346,19 @@ pre.diff .del { color: var(--crit); background: var(--crit-soft); display: block
 .pr .ic svg { width: 12px; height: 12px; }
 .pr .t { font-weight: 500; overflow-wrap: anywhere; }
 .pr.ok .t, .pr.issues .t { color: var(--fg-2); font-weight: 400; }
+.att-no { border: 1px solid var(--line-strong); background: var(--surface); color: var(--fg-2); font: 500 11.5px/1.6 var(--font-mono); padding: 0 7px; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+.att-no:hover { border-color: var(--accent); color: var(--accent); }
+.integrity { display: flex; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 10px; font-size: 13.5px; }
+.integrity svg { width: 18px; height: 18px; flex: none; }
+.integrity.good { background: var(--ok-soft); color: var(--ok); } .integrity.bad { background: var(--crit-soft); color: var(--crit); } .integrity.wait { background: var(--surface-2); color: var(--muted); }
+.kv { display: grid; grid-template-columns: minmax(110px, 34%) minmax(0, 1fr); gap: 8px 14px; margin: 0; font-size: 13.5px; }
+.kv dt { color: var(--muted); } .kv dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.hash { font: 12px/1.5 var(--font-mono); overflow-wrap: anywhere; color: var(--fg-2); }
+.reg-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 10px 4px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.reg-row:hover { background: var(--surface-2); }
+.reg-row .t { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reg-list { max-height: min(52vh, 520px); overflow-y: auto; margin: 0 -4px; }
+@media (max-width: 860px) { .kv { grid-template-columns: 1fr; gap: 2px; } .kv dd { margin-bottom: 8px; } .reg-row { grid-template-columns: minmax(0, 1fr) auto; } .reg-row .att-no { grid-column: 1 / -1; justify-self: start; } }
 .out-ok { color: var(--ok); background: var(--ok-soft); } .out-issues { color: var(--high); background: var(--high-soft); }
 .choice { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 
@@ -675,6 +688,7 @@ details.adv[open] summary { margin-bottom: 12px; }
           <div class="spacer"></div>
           <div class="dl-toolbar">
             <div class="seg" role="group" aria-label="Vista"><button id="dl-v-list" aria-pressed="true">Elenco</button><button id="dl-v-month" aria-pressed="false">Mese</button></div>
+            <button class="btn" id="b-reg" title="Registro numerato e non modificabile delle attestazioni, esportabile in PDF e CSV"><svg><use href="#i-doc"/></svg>Registro</button>
             <button class="btn" id="b-ics" title="Scarica le scadenze aperte per Outlook o Google Calendar"><svg><use href="#i-download"/></svg>.ics</button>
             <button class="btn" id="b-import" data-edit title="Importa un calendario di controlli da Excel, CSV o .ics"><svg><use href="#i-upload"/></svg>Importa</button>
             <button class="btn primary" id="b-add-dl" data-edit><svg><use href="#i-plus"/></svg>Nuova scadenza</button>
@@ -829,6 +843,28 @@ details.adv[open] summary { margin-bottom: 12px; }
   </form>
 </dialog>
 
+<!-- attestazione: dettaglio -->
+<dialog id="dlg-att" style="width:min(640px, calc(100vw - 32px))" aria-labelledby="att-h">
+  <div class="dlg-h"><h3 id="att-h" class="mono"></h3><button class="btn ghost" data-close aria-label="Chiudi"><svg><use href="#i-x"/></svg></button></div>
+  <div class="dlg-b" id="att-body"></div>
+  <div class="dlg-f"><button class="btn" id="att-copy"><svg><use href="#i-doc"/></svg>Copia ID</button><button class="btn primary" id="att-pdf"><svg><use href="#i-download"/></svg>Scarica PDF</button></div>
+</dialog>
+
+<!-- registro delle attestazioni -->
+<dialog id="dlg-reg" style="width:min(820px, calc(100vw - 32px))" aria-labelledby="reg-h">
+  <div class="dlg-h"><h3 id="reg-h">Registro attestazioni</h3><button class="btn ghost" data-close aria-label="Chiudi"><svg><use href="#i-x"/></svg></button></div>
+  <div class="dlg-b">
+    <div id="reg-integrity" class="integrity wait"></div>
+    <div class="filters" style="padding:0;border:0">
+      <span class="pillselect"><select id="reg-period" aria-label="Periodo"></select></span>
+      <span class="pillselect"><select id="reg-kind" aria-label="Tipo"><option value="">Presidi e controlli</option><option value="presidio">Solo presidi</option><option value="controllo">Solo controlli</option></select></span>
+      <span class="hint" id="reg-count"></span>
+    </div>
+    <div class="reg-list" id="reg-list"></div>
+  </div>
+  <div class="dlg-f"><button class="btn" id="reg-csv"><svg><use href="#i-download"/></svg>CSV</button><button class="btn primary" id="reg-pdf"><svg><use href="#i-download"/></svg>PDF del registro</button></div>
+</dialog>
+
 <!-- dialog conferma -->
 <dialog id="dlg-confirm">
   <div class="dlg-h"><h3 id="cf-title"></h3></div>
@@ -916,6 +952,7 @@ const show = (id) => ["v-config", "v-auth", "v-pending", "v-offline", "v-reset",
 
 // ---------------------------------------------------------------- stato
 let sb, me, profiles = [], sources = [], alerts = [], selectedId = null, tab = "open", dirty = false;
+let attests = [], attIntegrity = null;   // registro delle attestazioni e ultima verifica della catena
 const canEdit = () => ["admin", "analyst"].includes(me?.role);
 
 function resolveConfig() {
@@ -1312,9 +1349,13 @@ const whenCls = (n) => n < 0 ? "over" : n <= 7 ? "soon" : "later";
 const MONTHS = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
 
 async function loadDeadlines() {
-  const { data, error } = await sb.from("ra_deadlines").select("*").order("due_date");
+  const [{ data, error }, att] = await Promise.all([
+    sb.from("ra_deadlines").select("*").order("due_date"),
+    sb.from("ra_attestations").select("*").order("seq", { ascending: false }).limit(5000),
+  ]);
   if (error) return;
   deadlines = data || [];
+  if (!att.error) { attests = att.data || []; attIntegrity = null; }
   updateDlBadge();
   if (!$("#view-deadlines").hidden) renderDeadlines();
   if (selectedId && $("#linked-dl")) $("#linked-dl").innerHTML = linkedDeadlinesHtml(alerts.find((a) => a.id === selectedId));
@@ -1353,7 +1394,7 @@ function dlRow(d, compact = false) {
     <div style="min-width:0">
       <div class="dl-title">${isAlert ? `<span class="muted" style="font-weight:500">Triage · </span>` : ""}${esc(d.title)}</div>
       <div class="dl-meta">
-        ${d.status === "done" ? `<span>completata ${d.done_at ? relTime(d.done_at) : ""}</span>${d.outcome ? `<span class="badge out-${d.outcome}" title="${esc(d.outcome_note || "")}">${d.outcome === "ok" ? "conforme" : "con rilievi"}</span>` : ""}` : `<span class="when ${whenCls(n)}">${whenTxt(n)}</span>`}
+        ${d.status === "done" ? `<span>completata ${d.done_at ? relTime(d.done_at) : ""}</span>${d.outcome ? `<span class="badge out-${d.outcome}" title="${esc(d.outcome_note || "")}">${d.outcome === "ok" ? "conforme" : "con rilievi"}</span>` : ""}${attChip(d.id)}` : `<span class="when ${whenCls(n)}">${whenTxt(n)}</span>`}
         <span class="badge k-${d.kind}">${DL_KIND[d.kind]}</span>
         ${d.authority ? `<span>${esc(d.authority)}</span>` : ""}
         ${d.area ? `<span class="tag">${esc(d.area)}</span>` : ""}
@@ -1448,7 +1489,7 @@ function renderPresidi(list) {
     return `<div class="pr ${st}"><span class="ic">${st ? icon("check") : ""}</span>
       <div style="min-width:0"><div class="t">${esc(d.title)}</div>
         <div class="dl-meta">${d.area ? `<span class="tag">${esc(d.area)}</span>` : ""}<span>${owner}</span>
-          ${d.status === "done" ? `<span class="badge out-${st}">${st === "ok" ? "conforme" : "con rilievi"}</span><span>attestato ${relTime(d.done_at)}${d.done_by ? " da " + esc(profiles.find((p) => p.id === d.done_by)?.full_name || "un membro del team") : ""}</span>${d.outcome_note ? `<span title="${esc(d.outcome_note)}">· ${esc(d.outcome_note.slice(0, 80))}${d.outcome_note.length > 80 ? "…" : ""}</span>` : ""}` : dDays(d.due_date) < 0 ? `<span class="when over">${whenTxt(dDays(d.due_date))}</span>` : ""}</div></div>
+          ${d.status === "done" ? `<span class="badge out-${st}">${st === "ok" ? "conforme" : "con rilievi"}</span><span>attestato ${relTime(d.done_at)}${d.done_by ? " da " + esc(profiles.find((p) => p.id === d.done_by)?.full_name || "un membro del team") : ""}</span>${attChip(d.id)}${d.outcome_note ? `<span title="${esc(d.outcome_note)}">· ${esc(d.outcome_note.slice(0, 80))}${d.outcome_note.length > 80 ? "…" : ""}</span>` : ""}` : dDays(d.due_date) < 0 ? `<span class="when over">${whenTxt(dDays(d.due_date))}</span>` : ""}</div></div>
       <div class="dl-acts">${canEdit() ? (d.status === "open" ? `<button class="btn sm" data-complete="${d.id}">${icon("check")}Attesta</button>` : "") + `<button class="btn ghost sm" data-edit-dl="${d.id}">Modifica</button>` : ""}</div></div>`;
   };
   const openNow = late > 0 || n <= 7;
@@ -1459,14 +1500,14 @@ function renderPresidi(list) {
       <div class="progress" aria-label="${attested.length} di ${total} attestati"><i style="width:${total ? Math.round(attested.length / total * 100) : 0}%"></i></div>
       <b class="mono">${attested.length}/${total}</b><span class="hint">attestati</span>
       <span style="margin-left:auto;display:flex;gap:6px">
-        <button type="button" class="btn ghost sm" id="b-pres-csv" title="Storico di tutte le attestazioni, per l'audit">${icon("download")}Storico</button>
+        <button type="button" class="btn ghost sm" id="b-pres-csv" title="Registro numerato delle attestazioni, esportabile in PDF e CSV">${icon("doc")}Registro</button>
         ${canEdit() && pending.length ? `<button type="button" class="btn sm" id="b-pres-all">${icon("check")}Attesta tutti conformi</button>` : ""}
       </span>
     </summary>
     ${pending.map(row).join("")}${attested.map(row).join("")}
   </details>`;
   box.querySelector("details").ontoggle = (e) => store.set("ra_presidi_open", e.target.open ? "1" : "0");
-  $("#b-pres-csv").onclick = (e) => { e.preventDefault(); exportAttestations(); };
+  $("#b-pres-csv").onclick = (e) => { e.preventDefault(); openRegister(d0period(period)); };
   if ($("#b-pres-all")) $("#b-pres-all").onclick = async (e) => {
     e.preventDefault();
     if (!(await confirmBox(`Attestare ${pending.length} presidi come conformi?`, `Ogni presidio ancora da attestare per ${monthLbl} viene registrato come conforme, a tuo nome e con l'ora attuale. Per segnalare un rilievo usa "Attesta" sulla singola riga.`, "Attesta tutti"))) return;
@@ -1477,16 +1518,226 @@ function renderPresidi(list) {
   };
 }
 
-function exportAttestations() {
-  const rows = deadlines.filter((d) => d.continuous && d.status === "done").sort((a, b) => a.due_date.localeCompare(b.due_date) || a.title.localeCompare(b.title, "it", { numeric: true }));
-  const name = (id) => profiles.find((p) => p.id === id)?.full_name || "";
+// ---------------------------------------------------------------- registro delle attestazioni
+// ogni attestazione ha numero progressivo, ID univoco e impronta SHA-256 concatenata alla precedente (migrazione 008)
+const d0period = (due) => due ? due.slice(0, 7) : "";
+const attFor = (deadlineId) => attests.find((a) => a.deadline_id === deadlineId);   // la più recente (ordine per seq decrescente)
+const attChip = (deadlineId) => { const a = attFor(deadlineId); return a ? `<button class="att-no" data-att="${a.id}" title="Apri l'attestazione">${esc(a.number)}</button>` : ""; };
+const attMonth = (a) => a.period.slice(0, 7);
+const monthName = (ym) => new Date(ym + "-15T12:00:00Z").toLocaleDateString("it-IT", { month: "long", year: "numeric", timeZone: "UTC" });
+const OUT_TXT = { ok: "Conforme", issues: "Con rilievi" };
+const KIND_TXT = { presidio: "Presidio continuativo", controllo: "Controllo periodico" };
+const stamp = (iso) => new Date(iso).toLocaleString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Europe/Rome" });
+
+async function verifyChain(force = false) {
+  if (attIntegrity && !force) return attIntegrity;
+  const { data, error } = await sb.rpc("ra_verify_attestations");
+  const r = error ? null : Array.isArray(data) ? data[0] : data;
+  attIntegrity = r ? { total: +r.total, broken: +r.broken, first: r.first_broken, last: r.last_hash, at: new Date().toISOString() } : { error: error?.message || "verifica non disponibile" };
+  return attIntegrity;
+}
+function integrityHtml(v) {
+  if (!v) return `<span class="spin"></span>Verifico la catena delle impronte…`;
+  if (v.error) return `${icon("flag")}<span>Non riesco a verificare il registro: ${esc(v.error)}</span>`;
+  if (!v.total) return `${icon("doc")}<span>Il registro è vuoto: la prima attestazione riceverà il numero 1.</span>`;
+  return v.broken ? `${icon("flag")}<span><b>Catena interrotta</b> a partire da ${esc(v.first)}: ${v.broken} attestazioni non corrispondono alla loro impronta. Segnalalo all'amministratore.</span>`
+    : `${icon("check")}<span><b>Registro integro.</b> ${v.total} attestazioni, ogni impronta ricalcolata e collegata alla precedente.</span>`;
+}
+
+function openAttestation(attId) {
+  const a = attests.find((x) => x.id === attId); if (!a) return;
+  $("#att-h").textContent = a.number;
+  const dl = (k, v, cls = "") => v ? `<dt>${k}</dt><dd class="${cls}">${v}</dd>` : "";
+  $("#att-body").innerHTML = `
+    <div class="integrity wait" id="att-int">${integrityHtml(attIntegrity)}</div>
+    <dl class="kv">
+      ${dl("Tipo", KIND_TXT[a.kind])}
+      ${dl(a.kind === "presidio" ? "Presidio" : "Controllo", `<b>${esc(a.control_title)}</b>`)}
+      ${dl("Codice del piano", a.control_code ? `<span class="mono">${esc(a.control_code)}</span>` : "")}
+      ${dl("Area", esc(a.area || ""))}
+      ${dl("Responsabile", esc(a.owner_label || ""))}
+      ${dl("Periodo", a.kind === "presidio" ? monthName(a.period) : fullDate(a.period + "T12:00:00Z", false))}
+      ${dl("Esito", `<span class="badge out-${a.outcome}">${OUT_TXT[a.outcome]}</span>`)}
+      ${dl("Note ed evidenze", esc(a.note || "—").replace(/\n/g, "<br>"))}
+      ${dl("Attestato da", `${esc(a.attested_by_name || "")}${a.attested_by_email ? ` <span class="muted">· ${esc(a.attested_by_email)}</span>` : ""}`)}
+      ${dl("Data e ora", `${stamp(a.attested_at)} <span class="muted">(ora del server)</span>`)}
+      ${a.backfilled ? dl("Nota", "Attestazione registrata prima dell'attivazione del registro e inserita in seguito con data e autore originali.") : ""}
+      ${dl("ID univoco", `<span class="hash">${a.id}</span>`)}
+      ${dl("Impronta SHA-256", `<span class="hash">${a.hash}</span>`)}
+      ${dl("Impronta precedente", `<span class="hash">${a.prev_hash}</span>`)}
+    </dl>`;
+  $("#att-copy").onclick = async () => { try { await navigator.clipboard.writeText(`${a.number} · ${a.id}`); toast("ID copiato"); } catch { toast(a.id); } };
+  $("#att-pdf").onclick = () => attestationPdf(a);
+  $("#dlg-att").showModal();
+  verifyChain().then((v) => { const el = $("#att-int"); if (el) { el.className = "integrity " + (v.error ? "wait" : v.broken ? "bad" : "good"); el.innerHTML = integrityHtml(v); } });
+}
+
+let regState = { period: "", kind: "" };
+function regRows() { return attests.filter((a) => (!regState.period || attMonth(a) === regState.period) && (!regState.kind || a.kind === regState.kind)); }
+function openRegister(period = "") {
+  const months = [...new Set(attests.map(attMonth))].sort().reverse();
+  regState.period = months.includes(period) ? period : months[0] || "";
+  $("#reg-period").innerHTML = `<option value="">Tutti i periodi</option>` + months.map((m) => `<option value="${m}">${monthName(m)}</option>`).join("");
+  $("#reg-period").value = regState.period; $("#reg-kind").value = regState.kind;
+  renderRegister(); $("#dlg-reg").showModal();
+  $("#reg-integrity").className = "integrity wait"; $("#reg-integrity").innerHTML = integrityHtml(null);
+  verifyChain(true).then((v) => { $("#reg-integrity").className = "integrity " + (v.error ? "wait" : v.broken ? "bad" : "good"); $("#reg-integrity").innerHTML = integrityHtml(v); });
+}
+function renderRegister() {
+  const rows = regRows();
+  $("#reg-count").textContent = `${rows.length} attestazion${rows.length === 1 ? "e" : "i"}`;
+  $("#reg-list").innerHTML = rows.length ? rows.map((a) => `<div class="reg-row" data-att="${a.id}" role="button" tabindex="0">
+      <span class="att-no">${esc(a.number)}</span>
+      <div style="min-width:0"><div class="t">${a.control_code ? `<span class="mono muted">${esc(a.control_code)}</span> · ` : ""}${esc(a.control_title)}</div>
+        <div class="dl-meta"><span>${a.kind === "presidio" ? "Presidio · " + monthName(a.period) : "Controllo · " + fullDate(a.period + "T12:00:00Z", false)}</span><span>${esc(a.attested_by_name || "")}</span><span>${stamp(a.attested_at)}</span></div></div>
+      <span class="badge out-${a.outcome}">${OUT_TXT[a.outcome].toLowerCase()}</span></div>`).join("")
+    : `<div class="empty" style="padding:28px">${icon("doc")}<h3>Nessuna attestazione</h3><p>Le attestazioni compaiono qui appena un presidio o un controllo viene attestato.</p></div>`;
+}
+$("#reg-period").onchange = (e) => { regState.period = e.target.value; renderRegister(); };
+$("#reg-kind").onchange = (e) => { regState.kind = e.target.value; renderRegister(); };
+$("#reg-csv").onclick = () => exportAttestationsCsv(regRows());
+$("#reg-pdf").onclick = () => registerPdf(regRows());
+$("#b-reg").onclick = () => openRegister();
+$$("dialog [data-close]").forEach((b) => (b.onclick = () => b.closest("dialog").close()));
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-att]"); if (!t || $("#v-app").hidden) return;
+  e.preventDefault(); e.stopPropagation();
+  if ($("#dlg-reg").open && !t.closest("#dlg-reg")) $("#dlg-reg").close();
+  openAttestation(t.dataset.att);
+}, true);
+$("#reg-list").addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.dataset.att) openAttestation(e.target.dataset.att); });
+
+function exportAttestationsCsv(rows) {
+  if (!rows.length) return toast("Nessuna attestazione da esportare");
   const cell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
-  const csv = "﻿" + [["Periodo", "Presidio", "Area", "Responsabile", "Esito", "Note ed evidenze", "Attestato il", "Attestato da"].map(cell).join(";"),
-    ...rows.map((d) => [d.due_date.slice(0, 7), d.title, d.area, d.owner_label || name(d.assignee), d.outcome === "issues" ? "Con rilievi" : "Conforme", d.outcome_note, d.done_at ? fullDate(d.done_at) : "", name(d.done_by)].map(cell).join(";"))].join("\r\n");
+  const head = ["Numero", "ID univoco", "Tipo", "Codice piano", "Presidio o controllo", "Area", "Responsabile", "Periodo", "Esito", "Note ed evidenze", "Attestato da", "Email", "Data e ora (Europe/Rome)", "Data e ora (UTC, ISO 8601)", "Registrata successivamente", "Impronta SHA-256", "Impronta precedente"];
+  const lines = [...rows].sort((a, b) => a.seq - b.seq).map((a) => [a.number, a.id, KIND_TXT[a.kind], a.control_code, a.control_title, a.area, a.owner_label, a.period, OUT_TXT[a.outcome], a.note, a.attested_by_name, a.attested_by_email, stamp(a.attested_at), new Date(a.attested_at).toISOString(), a.backfilled ? "sì" : "no", a.hash, a.prev_hash].map(cell).join(";"));
+  const csv = "﻿" + [head.map(cell).join(";"), ...lines].join("\r\n");
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-  a.download = `regalert-attestazioni-presidi-${todayKey()}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  toast(rows.length ? `${rows.length} attestazioni esportate` : "Nessuna attestazione ancora registrata");
+  a.download = `regalert-registro-attestazioni${regState.period ? "-" + regState.period : ""}-${todayKey()}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast(`${rows.length} attestazioni esportate`);
+}
+
+// PDF: jsPDF caricato solo quando serve
+let pdfLib = null;
+function loadPdfLib() {
+  if (pdfLib) return pdfLib;
+  const add = (src) => new Promise((ok, ko) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => ko(new Error("libreria PDF non raggiungibile")); document.head.appendChild(s); });
+  pdfLib = add("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js")
+    .then(() => add("https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"))
+    .then(() => window.jspdf.jsPDF).catch((e) => { pdfLib = null; throw e; });
+  return pdfLib;
+}
+// i font standard del PDF coprono il set latino occidentale: normalizza il resto
+const pdfTxt = (v) => String(v ?? "").replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/…/g, "...").replace(/[^\x09\x0A\x0D\x20-\x7E -ÿ–—·€]/g, "?");
+const NAVY = [24, 44, 77], GOLD = [242, 193, 78], GREY = [107, 122, 144], INK = [23, 34, 53];
+
+function pdfHeader(doc, title, right) {
+  const W = doc.internal.pageSize.getWidth();
+  doc.setFillColor(...NAVY); doc.rect(0, 0, W, 22, "F");
+  doc.setFillColor(...GOLD); doc.circle(16, 11, 2.2, "F");
+  doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.text("RegAlert", 21, 12.6);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(200, 210, 228); doc.text(pdfTxt(title), 44, 12.6);
+  doc.setFont("courier", "bold"); doc.setFontSize(11); doc.setTextColor(...GOLD); doc.text(pdfTxt(right), W - 14, 12.6, { align: "right" });
+}
+function pdfFooter(doc, line) {
+  const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), n = doc.getNumberOfPages();
+  for (let i = 1; i <= n; i++) {
+    doc.setPage(i); doc.setDrawColor(225, 230, 238); doc.line(14, H - 14, W - 14, H - 14);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(...GREY);
+    doc.text(doc.splitTextToSize(pdfTxt(line), W - 50), 14, H - 9.5);
+    doc.text(`Pagina ${i} di ${n}`, W - 14, H - 9.5, { align: "right" });
+  }
+}
+const genLine = (v) => `Generato da RegAlert il ${stamp(new Date().toISOString())} da ${me.full_name || me.email}. ` +
+  (v && !v.error ? (v.broken ? `ATTENZIONE: catena delle impronte interrotta da ${v.first}.` : `Verifica della catena al momento dell'esportazione: integra (${v.total} attestazioni, impronta finale ${String(v.last).slice(0, 16)}...).`) : "Verifica della catena non disponibile.");
+
+async function attestationPdf(a) {
+  toast("Preparo il PDF…", { busy: true });
+  let jsPDF, v;
+  try { [jsPDF, v] = await Promise.all([loadPdfLib(), verifyChain()]); } catch (e) { return toast(e.message, { bad: true }); }
+  const doc = new jsPDF({ unit: "mm", format: "a4" }), W = doc.internal.pageSize.getWidth(), L = 18, R = W - 18;
+  doc.setProperties({ title: `${a.number} - ${a.control_title}`, subject: "Attestazione", author: a.attested_by_name || "", creator: "RegAlert" });
+  pdfHeader(doc, "Registro attestazioni", a.number);
+  let y = 38;
+  doc.setTextColor(...GREY); doc.setFont("helvetica", "bold"); doc.setFontSize(8.5);
+  doc.text((a.kind === "presidio" ? "ATTESTAZIONE DI PRESIDIO CONTINUATIVO" : "ATTESTAZIONE DI ESECUZIONE DEL CONTROLLO"), L, y);
+  doc.setTextColor(...INK); doc.setFontSize(15);
+  const title = doc.splitTextToSize(pdfTxt((a.control_code ? a.control_code + " · " : "") + a.control_title), R - L);
+  doc.text(title, L, y += 8); y += title.length * 6.2 + 2;
+  // esito
+  const ok = a.outcome === "ok";
+  doc.setFillColor(...(ok ? [230, 245, 236] : [253, 240, 226])); doc.roundedRect(L, y, R - L, 13, 2, 2, "F");
+  doc.setTextColor(...(ok ? [22, 128, 75] : [180, 90, 10])); doc.setFont("helvetica", "bold"); doc.setFontSize(11);
+  doc.text(`Esito: ${OUT_TXT[a.outcome]}`, L + 5, y + 8.3);
+  doc.setFont("helvetica", "normal"); doc.setFontSize(9.5);
+  doc.text(pdfTxt(a.kind === "presidio" ? `Periodo: ${monthName(a.period)}` : `Scadenza del controllo: ${fullDate(a.period + "T12:00:00Z", false)}`), R - 5, y + 8.3, { align: "right" });
+  y += 20;
+  const body = [
+    ["Numero", a.number], ["Tipo", KIND_TXT[a.kind]], ["Codice del piano", a.control_code || "-"], ["Area", a.area || "-"], ["Responsabile", a.owner_label || "-"],
+    ["Attestato da", `${a.attested_by_name || ""}${a.attested_by_email ? " <" + a.attested_by_email + ">" : ""}`],
+    ["Data e ora", `${stamp(a.attested_at)} (Europe/Rome) - ${new Date(a.attested_at).toISOString()} UTC, ora del server`],
+    ["Note ed evidenze", a.note || "-"],
+  ];
+  if (a.backfilled) body.push(["Nota", "Attestazione registrata prima dell'attivazione del registro e inserita in seguito con data e autore originali."]);
+  doc.autoTable({ startY: y, margin: { left: L, right: 18 }, theme: "plain", body: body.map((r) => r.map(pdfTxt)),
+    styles: { font: "helvetica", fontSize: 9.5, cellPadding: { top: 2.2, bottom: 2.2, left: 0, right: 4 }, textColor: INK, lineColor: [225, 230, 238], lineWidth: { bottom: 0.2 } },
+    columnStyles: { 0: { cellWidth: 42, textColor: GREY } } });
+  y = doc.lastAutoTable.finalY + 10;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(8.5); doc.setTextColor(...GREY); doc.text("DATI DI INTEGRITÀ", L, y); y += 3;
+  doc.autoTable({ startY: y, margin: { left: L, right: 18 }, theme: "plain",
+    body: [["ID univoco", a.id], ["Impronta SHA-256", a.hash], ["Impronta precedente", a.prev_hash],
+      ["Verifica", v.error ? "non disponibile" : v.broken ? `catena interrotta da ${v.first}` : `catena integra al ${stamp(v.at)} (${v.total} attestazioni)`]].map((r) => r.map(pdfTxt)),
+    styles: { font: "courier", fontSize: 8.5, cellPadding: { top: 1.8, bottom: 1.8, left: 0, right: 4 }, textColor: INK, overflow: "linebreak" },
+    columnStyles: { 0: { cellWidth: 42, font: "helvetica", textColor: GREY } } });
+  y = doc.lastAutoTable.finalY + 6;
+  doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...GREY);
+  const expl = doc.splitTextToSize("L'impronta è calcolata sui dati di questa attestazione e sull'impronta dell'attestazione precedente: qualsiasi modifica successiva al registro la renderebbe diversa. Per verificare il documento, confronta numero, ID e impronta con quelli presenti nel registro RegAlert.", R - L);
+  doc.text(expl, L, y); y += expl.length * 3.6 + 14;
+  if (y < 250) {
+    doc.setDrawColor(...GREY); doc.line(L, y + 10, L + 70, y + 10); doc.line(R - 70, y + 10, R, y + 10);
+    doc.setFontSize(8); doc.text("Luogo e data", L, y + 14.5); doc.text(pdfTxt("Firma — " + (a.attested_by_name || "")), R - 70, y + 14.5);
+  }
+  pdfFooter(doc, genLine(v));
+  doc.save(`${a.number}${a.control_code ? "_" + a.control_code : ""}.pdf`);
+  toast(`PDF di ${a.number} scaricato`);
+}
+
+async function registerPdf(rows) {
+  if (!rows.length) return toast("Nessuna attestazione da esportare");
+  toast("Preparo il PDF del registro…", { busy: true });
+  let jsPDF, v;
+  try { [jsPDF, v] = await Promise.all([loadPdfLib(), verifyChain()]); } catch (e) { return toast(e.message, { bad: true }); }
+  rows = [...rows].sort((a, b) => a.seq - b.seq);
+  const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" }), W = doc.internal.pageSize.getWidth();
+  const scope = (regState.period ? monthName(regState.period) : "tutti i periodi") + (regState.kind ? ` · solo ${regState.kind === "presidio" ? "presidi" : "controlli"}` : "");
+  doc.setProperties({ title: `Registro attestazioni - ${scope}`, creator: "RegAlert" });
+  const ok = rows.filter((a) => a.outcome === "ok").length;
+  doc.autoTable({
+    startY: 50, margin: { top: 30, left: 14, right: 14, bottom: 20 },
+    head: [["Numero", "Codice", "Presidio o controllo", "Area", "Periodo", "Esito", "Note ed evidenze", "Attestato da", "Data e ora", "Impronta (inizio)"]],
+    body: rows.map((a) => [a.number + (a.backfilled ? " *" : ""), a.control_code || "", a.control_title, a.area || "", a.kind === "presidio" ? a.period : a.period.split("-").reverse().join("/"), OUT_TXT[a.outcome], a.note || "", a.attested_by_name || "", stamp(a.attested_at).slice(0, 17).replace(",", ""), a.hash.slice(0, 16)].map(pdfTxt)),
+    styles: { font: "helvetica", fontSize: 7.6, cellPadding: 1.8, textColor: INK, lineColor: [225, 230, 238], lineWidth: 0.15, valign: "top" },
+    headStyles: { fillColor: NAVY, textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [246, 248, 251] },
+    columnStyles: { 0: { cellWidth: 31, font: "courier", fontStyle: "bold", fontSize: 7.4 }, 1: { cellWidth: 13 }, 2: { cellWidth: 50 }, 3: { cellWidth: 20 }, 4: { cellWidth: 18 }, 5: { cellWidth: 17 }, 6: { cellWidth: 46 }, 7: { cellWidth: 23 }, 8: { cellWidth: 23 }, 9: { cellWidth: 28, font: "courier", fontSize: 6.8 } },
+    didParseCell: (c) => { if (c.section === "body" && c.column.index === 5) c.cell.styles.textColor = c.cell.raw === "Conforme" ? [22, 128, 75] : [180, 90, 10]; },
+    didDrawPage: () => {
+      pdfHeader(doc, "Registro attestazioni", scope);
+      if (doc.getNumberOfPages() === 1) {
+        doc.setTextColor(...INK); doc.setFont("helvetica", "bold"); doc.setFontSize(15); doc.text(pdfTxt("Registro attestazioni — " + scope), 14, 34);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...GREY);
+        doc.text(pdfTxt(`${rows.length} attestazioni (${rows[0].number} – ${rows.at(-1).number}) · ${ok} conformi · ${rows.length - ok} con rilievi`), 14, 40.5);
+        doc.text(pdfTxt(v.error ? "Verifica della catena non disponibile" : v.broken ? `ATTENZIONE: catena interrotta da ${v.first}` : `Catena delle impronte verificata il ${stamp(v.at)}: integra. Impronta finale del registro: ${v.last}`), 14, 45.5);
+      }
+    },
+  });
+  let y = doc.lastAutoTable.finalY + 6;
+  if (rows.some((a) => a.backfilled)) { doc.setFontSize(7.5); doc.setTextColor(...GREY); doc.text("* Attestazione registrata prima dell'attivazione del registro e inserita in seguito con data e autore originali.", 14, y); }
+  pdfFooter(doc, genLine(v) + " Ogni riga riporta i primi 16 caratteri dell'impronta SHA-256; impronte complete e ID univoci sono nel CSV e nel PDF di ogni attestazione.");
+  doc.save(`Registro_attestazioni_${regState.period || "completo"}_${todayKey()}.pdf`);
+  toast("PDF del registro scaricato");
 }
 
 // esito: chiesto per controlli e presidi, non per le altre scadenze
@@ -2264,7 +2515,9 @@ document.addEventListener("click", async (e) => {
     const { data, error } = await sb.rpc("ra_complete_deadline", { p_id: id("complete"), p_outcome: res.outcome, p_note: res.note });
     if (error) return toast(error.message, { bad: true });
     const nx = data && (await sb.from("ra_deadlines").select("due_date").eq("id", data).maybeSingle()).data;
-    toast(dd?.continuous ? `Presidio attestato${nx ? `: prossima attestazione il ${fullDate(nx.due_date + "T12:00:00Z", false)}` : ""}` : nx ? `Completata. Prossima scadenza: ${fullDate(nx.due_date + "T12:00:00Z", false)}` : "Scadenza completata"); loadDeadlines();
+    const att = dd && (dd.kind === "control" || dd.continuous) ? (await sb.from("ra_attestations").select("number").eq("deadline_id", dd.id).order("seq", { ascending: false }).limit(1).maybeSingle()).data : null;
+    toast(att ? `${dd.continuous ? "Presidio attestato" : "Controllo registrato"} con il n. ${att.number}${nx ? ` · prossimo il ${fullDate(nx.due_date + "T12:00:00Z", false)}` : ""}`
+      : nx ? `Completata. Prossima scadenza: ${fullDate(nx.due_date + "T12:00:00Z", false)}` : "Scadenza completata"); loadDeadlines();
   } else if (t.dataset.reopen) {
     const { error } = await sb.from("ra_deadlines").update({ status: "open" }).eq("id", id("reopen"));
     error ? toast(error.message, { bad: true }) : (toast("Scadenza riaperta"), loadDeadlines());
