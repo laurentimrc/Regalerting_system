@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>RegAlert</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%228%22 fill=%22%23182c4d%22/%3E%3Cpath d=%22M10 22V10h7a4 4 0 0 1 0 8h-7m6 0 5 4%22 stroke=%22%23f2c14e%22 stroke-width=%222.6%22 fill=%22none%22 stroke-linecap=%22round%22/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#182c4d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="RegAlert">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="format-detection" content="telephone=no">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
@@ -455,6 +463,31 @@ details.adv[open] summary { margin-bottom: 12px; }
   .src .acts { grid-column: 2; }
   .shortcuts { display: none; }
 }
+/* app sul telefono: barra delle sezioni in basso */
+.tabbar, .netbar { display: none; }
+.netbar:not([hidden]) { display: flex; align-items: center; gap: 8px; justify-content: center; padding: 6px 16px; font-size: 12.5px; font-weight: 500; background: var(--warn-soft, #fff4e0); color: var(--warn, #8a5a00); border-bottom: 1px solid var(--line); }
+.install-btn { margin: 8px 10px 0; display: flex; align-items: center; gap: 10px; border: 1px dashed var(--ink-muted); background: none; color: var(--ink-fg); font: inherit; font-weight: 500; padding: 9px 12px; border-radius: 8px; cursor: pointer; }
+.install-btn svg { width: 18px; height: 18px; }
+.ios-tip { display: grid; gap: 10px; font-size: 14px; color: var(--fg-2); }
+.ios-tip ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+.ios-tip .share { display: inline-block; vertical-align: -3px; width: 16px; height: 16px; }
+@media (max-width: 860px) {
+  .menu-btn { display: none !important; }
+  .tabbar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); position: fixed; left: 0; right: 0; bottom: 0; z-index: 35;
+    background: var(--surface); border-top: 1px solid var(--line); padding: 4px max(4px, env(safe-area-inset-right, 0px)) calc(4px + env(safe-area-inset-bottom, 0px)) max(4px, env(safe-area-inset-left, 0px)); }
+  .tabbar button { position: relative; display: grid; justify-items: center; gap: 2px; border: 0; background: none; color: var(--muted); font: inherit; font-size: 11px; font-weight: 500; padding: 6px 2px; border-radius: 10px; cursor: pointer; min-height: 48px; -webkit-tap-highlight-color: transparent; }
+  .tabbar svg { width: 22px; height: 22px; }
+  .tabbar button[aria-current="page"] { color: var(--accent); }
+  .tabbar button[aria-current="page"] svg { stroke-width: 2.3; }
+  .tabbar .tb { position: absolute; top: 2px; left: calc(50% + 6px); min-width: 17px; height: 17px; padding: 0 5px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 10.5px; line-height: 17px; font-variant-numeric: tabular-nums; }
+  .tabbar .tb.crit { background: var(--crit); } .tabbar .tb.gold { background: var(--gold); color: var(--ink); }
+  .main { padding-bottom: calc(61px + env(safe-area-inset-bottom, 0px)); }
+  .toast { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+  .side { padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+  dialog { max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); }
+  input, select, textarea { font-size: 16px; }   /* evita lo zoom automatico di iOS */
+}
+@media (display-mode: standalone) { body { overscroll-behavior-y: none; } }
 @media (max-width: 520px) { .props { grid-template-columns: 1fr 1fr; } .member { grid-template-columns: 36px minmax(0, 1fr); } .member select, .member .role-txt { grid-column: 2; justify-self: start; } }
 </style>
 </head>
@@ -530,6 +563,15 @@ details.adv[open] summary { margin-bottom: 12px; }
 </div>
 
 <!-- in attesa -->
+<div id="v-offline" class="auth-side" style="min-height:100%" hidden>
+  <div class="auth-form" style="text-align:center;justify-items:center">
+    <div class="logo-mark" style="width:48px;height:48px;background:var(--warn-soft)"><svg style="width:24px;height:24px;color:var(--warn)"><use href="#i-refresh"/></svg></div>
+    <h2>Sei offline</h2>
+    <p class="sub" style="margin:0">RegAlert legge alert e scadenze dal server, quindi serve la connessione. Si ricollega da sola appena torna la rete.</p>
+    <button class="btn" id="off-retry">Riprova</button>
+  </div>
+</div>
+
 <div id="v-pending" class="auth-side" style="min-height:100%" hidden>
   <div class="auth-form" style="text-align:center;justify-items:center">
     <div class="logo-mark" style="width:48px;height:48px;background:var(--warn-soft)"><svg style="width:24px;height:24px;color:var(--warn)"><use href="#i-user"/></svg></div>
@@ -550,6 +592,7 @@ details.adv[open] summary { margin-bottom: 12px; }
       <button data-view="team"><svg><use href="#i-team"/></svg>Team<span class="count" id="nav-pending" hidden style="background:var(--gold);color:var(--ink)"></span></button>
       <button data-view="settings" data-admin><svg><use href="#i-gear"/></svg>Impostazioni</button>
     </nav>
+    <button class="install-btn" id="b-install" hidden><svg><use href="#i-download"/></svg>Installa l'app</button>
     <div class="side-label">Stato monitoraggio</div>
     <div class="side-health" id="side-health"></div>
     <div class="side-foot">
@@ -559,6 +602,13 @@ details.adv[open] summary { margin-bottom: 12px; }
     </div>
   </aside>
   <div class="scrim" id="scrim" hidden></div>
+  <nav class="tabbar" id="tabbar" aria-label="Sezioni">
+    <button data-view="alerts"><svg><use href="#i-inbox"/></svg>Alert<span class="tb" data-src="nav-count" hidden></span></button>
+    <button data-view="deadlines"><svg><use href="#i-cal"/></svg>Scadenze<span class="tb" data-src="nav-dl" hidden></span></button>
+    <button data-view="sources"><svg><use href="#i-radar"/></svg>Fonti<span class="tb crit" data-src="nav-src-err" hidden></span></button>
+    <button data-view="team"><svg><use href="#i-team"/></svg>Team<span class="tb gold" data-src="nav-pending" hidden></span></button>
+    <button data-more aria-label="Altro: impostazioni, stato e uscita"><svg><use href="#i-menu"/></svg>Altro</button>
+  </nav>
 
   <div class="main">
     <header class="toolbar">
@@ -568,6 +618,7 @@ details.adv[open] summary { margin-bottom: 12px; }
       <div class="search" id="search-box"><svg><use href="#i-search"/></svg><input type="search" id="q" placeholder="Cerca" aria-label="Cerca negli alert"><kbd>/</kbd></div>
       <button class="btn" id="b-collect" data-edit title="Controlla subito tutte le fonti"><svg><use href="#i-refresh"/></svg><span class="collect-label">Controlla ora</span></button>
     </header>
+    <div class="netbar" id="netbar" hidden role="status"><svg width="14" height="14"><use href="#i-dot"/></svg>Sei offline: i dati mostrati potrebbero non essere aggiornati</div>
 
     <div class="content">
       <!-- ALERT -->
@@ -845,7 +896,7 @@ function confirmBox(title, text, yes) {
     d.showModal();
   });
 }
-const show = (id) => ["v-config", "v-auth", "v-pending", "v-app"].forEach((v) => ($("#" + v).hidden = v !== id));
+const show = (id) => ["v-config", "v-auth", "v-pending", "v-offline", "v-app"].forEach((v) => ($("#" + v).hidden = v !== id));
 
 // ---------------------------------------------------------------- stato
 let sb, me, profiles = [], sources = [], alerts = [], selectedId = null, tab = "open", dirty = false;
@@ -864,11 +915,13 @@ async function boot() {
   sb.auth.onAuthStateChange((ev) => { if (ev === "SIGNED_OUT") { me = null; show("v-auth"); } });
   const { data: { session } } = await sb.auth.getSession();
   if (!session) { show("v-auth"); return; }
+  if (!navigator.onLine) { show("v-offline"); return; }
   await enter();
 }
 
 async function enter() {
-  const { data: { user } } = await sb.auth.getUser();
+  const { data: { user }, error: uerr } = await sb.auth.getUser();
+  if (!user && (!navigator.onLine || uerr?.name === "AuthRetryableFetchError")) { show("v-offline"); return; }
   if (!user) { show("v-auth"); return; }
   let { data: prof, error } = await sb.from("ra_profiles").select("*").eq("id", user.id).maybeSingle();
   if (!error && !prof) {
@@ -897,7 +950,7 @@ async function enter() {
 function go(view) {
   if (!["alerts", "deadlines", "sources", "team", "settings"].includes(view)) view = "alerts";
   if (view === "settings" && me.role !== "admin") view = "alerts";
-  $$("#nav button").forEach((b) => b.dataset.view === view ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
+  $$("#nav button, #tabbar button[data-view]").forEach((b) => b.dataset.view === view ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
   ["alerts", "deadlines", "sources", "team", "settings"].forEach((v) => ($("#view-" + v).hidden = v !== view));
   $("#view-title").textContent = { alerts: "Alert", deadlines: "Scadenziario", sources: "Fonti", team: "Team", settings: "Impostazioni" }[view];
   $("#search-box").hidden = view !== "alerts";
@@ -1905,6 +1958,45 @@ $("#p-reload").onclick = () => location.reload();
 $("#nav").onclick = (e) => { const v = e.target.closest("button")?.dataset.view; if (v) go(v); };
 $("#b-menu").onclick = () => { $("#v-app").classList.add("nav-open"); $("#scrim").hidden = false; };
 $("#scrim").onclick = closeNav;
+$$("#tabbar button[data-view]").forEach((b) => (b.onclick = () => go(b.dataset.view)));
+$("#tabbar [data-more]").onclick = () => { $("#v-app").classList.add("nav-open"); $("#scrim").hidden = false; };
+
+// ---------------------------------------------------------------- app installabile (PWA)
+// contatori della barra laterale copiati nella barra in basso; alert aperti anche sull'icona dell'app
+const syncTabBadges = () => {
+  $$("#tabbar .tb").forEach((t) => { const src = $("#" + t.dataset.src); t.hidden = src.hidden; t.textContent = src.textContent;
+    if (t.dataset.src === "nav-dl") t.classList.toggle("crit", !!src.style.background); });
+  const n = +$("#nav-count").textContent || 0;
+  if ("setAppBadge" in navigator) (n && !$("#nav-count").hidden ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => {});
+};
+new MutationObserver(syncTabBadges).observe($("#nav"), { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["hidden", "style"] });
+
+const netState = () => ($("#netbar").hidden = navigator.onLine);
+addEventListener("online", () => { netState(); if (!$("#v-offline").hidden) enter(); else if (me) { loadAlerts(true); loadDeadlines(); } });
+$("#off-retry").onclick = () => (navigator.onLine ? enter() : toast("Ancora nessuna connessione", { bad: true }));
+addEventListener("offline", netState); netState();
+
+const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+let installEvt = null;
+addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; $("#b-install").hidden = false; });
+addEventListener("appinstalled", () => { installEvt = null; $("#b-install").hidden = true; toast("RegAlert è installata: la trovi tra le app"); });
+const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+if (isIos && !standalone) $("#b-install").hidden = false;
+$("#b-install").onclick = async () => {
+  closeNav();
+  if (installEvt) { installEvt.prompt(); const r = await installEvt.userChoice; if (r.outcome === "accepted") $("#b-install").hidden = true; installEvt = null; return; }
+  $("#dlg-ios").showModal();
+};
+
+const hadSw = "serviceWorker" in navigator && !!navigator.serviceWorker.controller;
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+  navigator.serviceWorker.register("sw.js").then((reg) => {
+    reg.addEventListener("updatefound", () => {
+      const w = reg.installing;
+      w?.addEventListener("statechange", () => { if (w.state === "activated" && hadSw) toast("App aggiornata alla nuova versione"); });
+    });
+  }).catch(() => {});
+}
 window.addEventListener("hashchange", () => me && me.role !== "pending" && go(location.hash.slice(1)));
 
 // ---------------------------------------------------------------- eventi: alert
@@ -2136,5 +2228,16 @@ setInterval(() => { if (me && !$("#v-app").hidden) { renderHealth(); if (!$("#vi
 
 boot();
 </script>
+<dialog id="dlg-ios" aria-labelledby="ios-h">
+  <div class="dlg-h"><h3 id="ios-h">Installa RegAlert sull'iPhone</h3><button class="btn ghost" onclick="this.closest('dialog').close()" aria-label="Chiudi"><svg><use href="#i-x"/></svg></button></div>
+  <div class="dlg-b ios-tip">
+    <ol>
+      <li>Apri questa pagina in <b>Safari</b>.</li>
+      <li>Tocca <b>Condividi</b> <svg class="share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg> nella barra in basso.</li>
+      <li>Scegli <b>Aggiungi alla schermata Home</b>, poi <b>Aggiungi</b>.</li>
+    </ol>
+    <p style="margin:0">RegAlert si aprirà a schermo intero dalla sua icona, come un'app. L'accesso resta quello che usi adesso.</p>
+  </div>
+</dialog>
 </body>
 </html>

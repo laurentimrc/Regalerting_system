@@ -50,3 +50,12 @@ cd supabase/functions && deno test -A _shared/parse_test.ts
 - I PDF collegati non vengono letti dall'AI (la sintesi usa titolo ed estratto).
 - Il digest delle 7:40 è espresso in UTC: va spostato di un'ora al cambio dell'ora legale.
 - Le sintesi AI sono una valutazione preliminare: la valutazione d'impatto resta del team.
+
+## App sul telefono (PWA)
+
+La dashboard si installa come app su iPhone e Android: icona sulla schermata Home, apertura a schermo intero, barra delle sezioni in basso e numero di alert aperti sull'icona (dove il sistema lo supporta).
+
+- **Android / Chrome**: apri la dashboard e tocca *Installa l'app* nel menu *Altro* (o *Installa app* nel menu di Chrome).
+- **iPhone / iPad**: apri la dashboard in Safari → *Condividi* → *Aggiungi alla schermata Home*.
+
+File: `manifest.webmanifest`, `sw.js` (salva solo l'interfaccia; i dati Supabase passano sempre dalla rete e non restano sul telefono), `icons/`. Senza rete l'app mostra una schermata dedicata e si ricollega da sola. Per forzare l'aggiornamento dopo una modifica a `sw.js`, cambia `VERSION`.
