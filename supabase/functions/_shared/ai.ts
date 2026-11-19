@@ -32,29 +32,38 @@ export async function enrich(
   if (!key) return null;
   const model = Deno.env.get("AI_MODEL") ?? "claude-haiku-5-5";
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "x-api-key": key,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 800,
-      system: SYSTEM,
-      messages: [{
-        role: "user",
-        content:
-          `DATA DI OGGI: ${new Date().toISOString().slice(0, 10)}\n\nPROFILO INTERMEDIARIO:\n${orgProfile}\n\nAUTORITÀ: ${input.authority}\nTITOLO: ${input.title}\nURL: ${input.url ?? "-"}\n\n<documento>\n${input.text.slice(0, 8000).replace(/<\/?documento>/gi, "")}\n</documento>`,
-      }],
-    }),
-  });
-  if (!res.ok) throw new Error(`Anthropic API ${res.status}: ${(await res.text()).slice(0, 300)}`);
-  const data = await res.json();
-  const raw: string = data?.content?.find((c: { type: string }) => c.type === "text")?.text ?? "";
-  const json = raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1);
-  const r = JSON.parse(json);
+  const userMsg =
+    `DATA DI OGGI: ${new Date().toISOString().slice(0, 10)}\n\nPROFILO INTERMEDIARIO:\n${orgProfile}\n\nAUTORITÀ: ${input.authority}\nTITOLO: ${input.title}\nURL: ${input.url ?? "-"}\n\n<documento>\n${input.text.slice(0, 8000).replace(/<\/?documento>/gi, "")}\n</documento>`;
+  const ask = async (messages: { role: string; content: string }[]) => {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+      body: JSON.stringify({ model, max_tokens: 1500, system: SYSTEM, messages }),
+    });
+    if (!res.ok) throw new Error(`Anthropic API ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    const data = await res.json();
+    return { raw: String(data?.content?.find((c: { type: string }) => c.type === "text")?.text ?? ""), stop: String(data?.stop_reason ?? "") };
+  };
+  // estrae il primo oggetto JSON completo dalla risposta (anche se racchiuso in un blocco di codice)
+  const extract = (raw: string) => {
+    const t = raw.replace(/```(?:json)?/gi, "");
+    const i = t.indexOf("{"), j = t.lastIndexOf("}");
+    if (i < 0 || j <= i) throw new Error("risposta senza JSON");
+    return JSON.parse(t.slice(i, j + 1));
+  };
+  const first = await ask([{ role: "user", content: userMsg }]);
+  let r;
+  try { r = extract(first.raw); }
+  catch {
+    // un secondo tentativo, più breve, se la risposta era troncata o non in formato JSON
+    const second = await ask([
+      { role: "user", content: userMsg },
+      { role: "assistant", content: first.raw.slice(0, 4000) || "(nessuna risposta)" },
+      { role: "user", content: "La risposta non era un JSON valido e completo. Rispondi di nuovo SOLO con l'oggetto JSON richiesto, con sintesi e impatto brevi (massimo 2 frasi ciascuno)." },
+    ]);
+    try { r = extract(second.raw); }
+    catch { throw new Error(`risposta AI non leggibile (${first.stop || "?"}/${second.stop || "?"})`); }
+  }
   const rel = ["high", "medium", "low", "none"].includes(r.relevance) ? r.relevance : "low";
   const pri = ["low", "medium", "high", "critical"].includes(r.priority) ? r.priority : "medium";
   return {
