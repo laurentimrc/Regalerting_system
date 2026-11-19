@@ -64,7 +64,13 @@ async function processSource(db: SupabaseClient, s: Source) {
 
   if (s.kind === "rss") {
     if (!looksLikeFeed(body, contentType)) throw new Error("La risposta non è un feed RSS/Atom");
-    const items = parseFeed(body, finalUrl);
+    let items = parseFeed(body, finalUrl);
+    // per i feed il filtro si applica a titolo, indirizzo ed estratto: tiene solo le voci pertinenti (es. parole chiave cripto)
+    if (s.link_pattern) {
+      if (s.link_pattern.length > 300) throw new Error("Filtro troppo lungo (max 300 caratteri)");
+      const re = new RegExp(s.link_pattern, "i");
+      items = items.filter((i) => re.test(`${i.title} ${i.url ?? ""} ${i.excerpt ?? ""}`));
+    }
     const cutoff = Date.now() - FIRST_RUN_DAYS * 86400_000;
     newItems = items.filter((i) => !seenSet.has(i.fingerprint))
       .filter((i) => !firstRun || (i.published_at && new Date(i.published_at).getTime() >= cutoff));
