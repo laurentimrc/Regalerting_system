@@ -70,5 +70,7 @@ File: `manifest.webmanifest`, `sw.js` (salva solo l'interfaccia; i dati Supabase
 - **Sessioni**: uscita automatica dopo un periodo di inattività configurabile (15 min – 2 ore); cambio password con chiusura delle altre sessioni; password di almeno 12 caratteri.
 - **Registro di sicurezza** (`ra_audit_log`, solo admin, append-only): accessi, codici MFA errati, ruoli, fonti, impostazioni, cancellazioni e riaperture, esportazioni di PDF e CSV.
 - **Raccoglitore**: scarica solo da siti pubblici (`_shared/net.ts`): niente IP privati, localhost, servizi di metadati o domini Supabase, anche dopo un redirect; risposte limitate a 6 MB; il testo raccolto è passato all'AI come dato, non come istruzioni.
-- **Dashboard**: Content Security Policy senza script inline, librerie da CDN con Subresource Integrity, link solo http(s), celle CSV protette dall'esecuzione di formule.
+- **Dashboard**: Content Security Policy senza script inline e senza script esterni (le librerie sono nella cartella `vendor/`, con le rispettive licenze), link solo http(s), celle CSV protette dall'esecuzione di formule.
 - **Da configurare nel pannello Supabase** (Authentication): protezione password compromesse, lunghezza minima 12, Redirect URLs, SMTP personalizzato, durata massima della sessione.
+
+- **Avvio**: se l'app non parte entro pochi secondi, `guard.js` mostra una schermata "Ripristina e ricarica" che elimina le copie salvate sul dispositivo e ricarica l'ultima versione.

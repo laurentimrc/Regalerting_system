@@ -73,7 +73,7 @@ function confirmBox(title, text, yes) {
     d.showModal();
   });
 }
-const show = (id) => ["v-config", "v-auth", "v-pending", "v-offline", "v-reset", "v-mfa", "v-app"].forEach((v) => ($("#" + v).hidden = v !== id));
+const show = (id) => { window.__raStarted = true; $("#v-fatal").hidden = true; ["v-config", "v-auth", "v-pending", "v-offline", "v-reset", "v-mfa", "v-app"].forEach((v) => ($("#" + v).hidden = v !== id)); };
 
 // ---------------------------------------------------------------- stato
 let sb, me, profiles = [], sources = [], alerts = [], selectedId = null, tab = "open", dirty = false;
@@ -774,9 +774,9 @@ function exportAttestationsCsv(rows) {
 let pdfLib = null;
 function loadPdfLib() {
   if (pdfLib) return pdfLib;
-  const add = (src, sri) => new Promise((ok, ko) => { const s = document.createElement("script"); s.src = src; s.integrity = sri; s.crossOrigin = "anonymous"; s.onload = ok; s.onerror = () => ko(new Error("libreria PDF non raggiungibile")); document.head.appendChild(s); });
-  pdfLib = add("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js", "sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk")
-    .then(() => add("https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js", "sha384-fCAW/rDWORTbQXSiB7mOg0QtQ5c+r0f544y6XoKjuVva0nMBlCpNUjiFeG5iMdS3"))
+  const add = (src) => new Promise((ok, ko) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = () => ko(new Error("libreria PDF non raggiungibile")); document.head.appendChild(s); });
+  pdfLib = add("vendor/jspdf-2.5.1.umd.min.js")
+    .then(() => add("vendor/jspdf-autotable-3.8.2.min.js"))
     .then(() => window.jspdf.jsPDF).catch((e) => { pdfLib = null; throw e; });
   return pdfLib;
 }
@@ -1195,6 +1195,7 @@ function renderImp() {
   }
 }
 
+const loadScript = (src) => new Promise((ok, ko) => { const s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = ko; document.head.appendChild(s); });
 async function readImpFile(file) {
   imp.file = file;
   const name = file.name.toLowerCase();
@@ -1204,7 +1205,7 @@ async function readImpFile(file) {
       imp.sheets = null; imp.rows = parseIcs(await file.text());
       imp.rows = imp.rows.map((r, i) => i ? [r[0], r[1], r[2] && /FREQ=/.test(r[2]) ? rruleToText(r[2]) : r[2], r[3], r[4]] : r);
     } else {
-      if (!window.XLSX) throw new Error("il lettore Excel non è ancora caricato: riprova tra un attimo");
+      if (!window.XLSX) await loadScript("vendor/xlsx-0.18.5.full.min.js").catch(() => { throw new Error("non riesco a caricare il lettore Excel: controlla la connessione"); });
       // date lette come numero seriale e convertite in UTC: evita lo slittamento di un giorno dovuto ai fusi orari
       imp.wb = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: false });
       imp.sheets = imp.wb.SheetNames; loadSheet(imp.sheets[0]);
@@ -2055,4 +2056,4 @@ $("#imp-body").addEventListener("input", (e) => { if (e.target.matches('input[da
 // aggiorna i tempi relativi ogni minuto
 setInterval(() => { if (me && !$("#v-app").hidden) { renderHealth(); if (!$("#view-alerts").hidden && !dirty) renderAlerts(); } }, 60000);
 
-boot();
+boot().catch((e) => { console.error(e); if (!window.__raStarted && window.__raFatal) window.__raFatal(); });
