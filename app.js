@@ -3,10 +3,9 @@ const CONFIG = { url: "https://cyyblaqhuevqlcjvtmsm.supabase.co", key: "sb_publi
 
 const STATUS = { new: "Da valutare", in_review: "In valutazione", action_required: "Azione richiesta", closed: "Chiuso", not_relevant: "Non pertinente" };
 const PRIORITY = { critical: "Critica", high: "Alta", medium: "Media", low: "Bassa" };
-const TASK_ST = { todo: "Da fare", doing: "In corso", done: "Completata", cancelled: "Annullata" };
 const POL_TYPE = { policy: "Policy", procedura: "Procedura", regolamento: "Regolamento", manuale: "Manuale", altro: "Altro" };
 const POL_ST = { in_force: "In vigore", under_review: "In revisione", draft: "Bozza", retired: "Ritirata" };
-let tasks = [], policies = [], polHistory = {};
+let policies = [], polHistory = {};
 const PRIO_LVL = { critical: 3, high: 3, medium: 2, low: 1 };
 const RELEVANCE = { high: "Rilevanza alta", medium: "Rilevanza media", low: "Rilevanza bassa", none: "Non rilevante" };
 const KIND = { rss: "Feed RSS", links: "Nuovi link", page: "Testo pagina" };
@@ -142,12 +141,11 @@ async function enter() {
   $$("[data-edit]").forEach((e) => (e.hidden = !canEdit()));
   $("#f-priority").innerHTML = `<option value="">Priorità</option>` + Object.entries(PRIORITY).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
   tab = store.get("ra_tab") || "open";
-  await Promise.all([loadProfiles(), loadSources(), loadAlerts(true), loadDeadlines(), loadTasks(), loadPolicies()]);
+  await Promise.all([loadProfiles(), loadSources(), loadAlerts(true), loadDeadlines(), loadPolicies()]);
   go(location.hash.slice(1) || store.get("ra_view") || "alerts");
   if (!window.__raLive) window.__raLive = sb.channel("ra-live")
     .on("postgres_changes", { event: "*", schema: "public", table: "ra_alerts" }, () => loadAlerts(true))
     .on("postgres_changes", { event: "*", schema: "public", table: "ra_deadlines" }, () => loadDeadlines())
-    .on("postgres_changes", { event: "*", schema: "public", table: "ra_tasks" }, () => loadTasks())
     .on("postgres_changes", { event: "*", schema: "public", table: "ra_policies" }, () => loadPolicies())
     .subscribe();
 }
@@ -157,7 +155,7 @@ function go(view) {
   if (view === "settings" && me.role !== "admin") view = "alerts";
   $$("#nav button, #tabbar button[data-view]").forEach((b) => b.dataset.view === view ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
   VIEWS.forEach((v) => ($("#view-" + v).hidden = v !== view));
-  $("#view-title").textContent = { alerts: "Alert", tasks: "Attività", deadlines: "Scadenziario", policies: "Politiche", sources: "Fonti", team: "Team", settings: "Impostazioni" }[view];
+  $("#view-title").textContent = { alerts: "Alert", deadlines: "Scadenziario", policies: "Politiche", sources: "Fonti", team: "Team", settings: "Impostazioni" }[view];
   $("#search-box").hidden = view !== "alerts";
   store.set("ra_view", view);
   if (location.hash.slice(1) !== view) history.replaceState(null, "", "#" + view);
@@ -167,10 +165,9 @@ function go(view) {
   if (view === "team") renderTeam();
   if (view === "settings") loadSettings();
   if (view === "deadlines") renderDeadlines();
-  if (view === "tasks") renderTasks();
   if (view === "policies") renderPolicies();
 }
-const VIEWS = ["alerts", "tasks", "deadlines", "policies", "sources", "team", "settings"];
+const VIEWS = ["alerts", "deadlines", "policies", "sources", "team", "settings"];
 const closeNav = () => { $("#v-app").classList.remove("nav-open"); $("#scrim").hidden = true; };
 
 // ---------------------------------------------------------------- dati
@@ -483,7 +480,8 @@ async function loadSettings() {
 }
 
 // ---------------------------------------------------------------- scadenziario
-const DL_KIND = { regulatory: "Normativa", reporting: "Segnalazione", consultation: "Consultazione", internal: "Interna", control: "Controllo", task: "Attività", policy: "Revisione politica" };
+const DL_KIND = { regulatory: "Normativa", reporting: "Segnalazione", consultation: "Consultazione", internal: "Attività", control: "Controllo", policy: "Revisione politica" };
+const canCompleteDl = (d) => !!d && d.status === "open" && (canEdit() || d.assignee === me.id);
 const DL_REC = { weekly: "ogni settimana", monthly: "ogni mese", quarterly: "ogni trimestre", semiannual: "ogni semestre", yearly: "ogni anno" };
 let deadlines = [], dlView = store.get("ra_dl_view") || "list", calMonth = null, editingDl = null;
 const todayKey = () => dayKey(Date.now());
@@ -507,7 +505,7 @@ async function loadDeadlines() {
 
 function updateDlBadge() {
   const pres = deadlines.filter((d) => d.status === "open" && d.continuous).map((d) => d.due_date).sort();
-  const open = [...deadlines.filter((d) => d.status === "open" && !d.continuous).map((d) => d.due_date), ...alerts.filter((a) => a.due_date && isOpen(a)).map((a) => a.due_date), ...pres.slice(0, 1)];
+  const open = [...deadlines.filter((d) => d.status === "open" && !d.continuous && d.due_date).map((d) => d.due_date), ...alerts.filter((a) => a.due_date && isOpen(a)).map((a) => a.due_date), ...pres.slice(0, 1)];
   const urgent = open.filter((d) => dDays(d) <= 7).length, late = open.some((d) => dDays(d) < 0);
   const props = deadlines.filter((d) => d.status === "proposed").length;
   const n = urgent + (canEdit() ? props : 0);
@@ -521,29 +519,30 @@ function dlItems({ includeDone = false } = {}) {
   const items = deadlines.filter((d) => d.status !== "proposed" && (includeDone || d.status === "open")).map((d) => ({ ...d, _type: "dl" }));
   if (withAlerts) for (const a of alerts) if (a.due_date && (includeDone || isOpen(a)))
     items.push({ _type: "alert", id: "a" + a.id, alert_id: a.id, title: a.title, due_date: a.due_date, kind: "internal", authority: a.source_authority, assignee: a.assignee, status: isOpen(a) ? "open" : "done", recurrence: "none" });
-  if ($("#dl-f-tasks").getAttribute("aria-pressed") === "true") for (const t of tasks) if (t.due_date && t.status !== "cancelled" && (includeDone || t.status !== "done"))
-    items.push({ _type: "task", id: "t" + t.id, task_id: t.id, title: t.title, due_date: t.due_date, kind: "task", assignee: t.assignee, status: t.status === "done" ? "done" : "open", done_at: t.done_at, recurrence: "none", alert_id: t.alert_id, priority: t.priority });
   if ($("#dl-f-pol").getAttribute("aria-pressed") === "true") for (const p of policies) if (p.next_review && p.status !== "retired")
     items.push({ _type: "policy", id: "p" + p.id, policy_id: p.id, title: (p.code ? p.code + " · " : "") + p.title, due_date: p.next_review, kind: "policy", area: p.area, assignee: p.owner, owner_label: p.owner_label, status: "open", recurrence: "none", regulation: p.version ? "v" + p.version : null });
   return items.filter((d) => (!kind || d.kind === kind) && (!au || d.authority === au) && (!ar || d.area === ar) && (!mine || d.assignee === me.id))
-    .sort((a, b) => a.due_date.localeCompare(b.due_date));
+    .sort((a, b) => (a.due_date || "9999").localeCompare(b.due_date || "9999") || PRI_RANK[a.priority || "medium"] - PRI_RANK[b.priority || "medium"]);
 }
+const PRI_RANK = { critical: 0, high: 1, medium: 2, low: 3 };
 
 function dateBox(d) {
+  if (!d.due_date) return `<div class="datebox nodate" title="Senza data"><span>senza</span><b>—</b></div>`;
   const n = dDays(d.due_date), [y, m, dd] = d.due_date.split("-");
   const cls = d.status === "done" ? "" : n < 0 ? "over" : n <= 7 ? "soon" : "";
   return `<div class="datebox ${cls}" title="${esc(fullDate(d.due_date + "T12:00:00Z", false))}"><span>${MONTHS[+m - 1]}${y !== todayKey().slice(0, 4) ? " " + y.slice(2) : ""}</span><b>${+dd}</b></div>`;
 }
 function dlRow(d, compact = false) {
-  const n = dDays(d.due_date), ed = canEdit(), who = profiles.find((p) => p.id === d.assignee);
-  const isAlert = d._type === "alert", isTask = d._type === "task", isPol = d._type === "policy";
+  const n = d.due_date ? dDays(d.due_date) : null, ed = canEdit(), who = profiles.find((p) => p.id === d.assignee);
+  const isAlert = d._type === "alert", isPol = d._type === "policy", own = d._type === "dl" && canCompleteDl(d);
   const pre = isAlert ? "Triage · " : isPol ? "Revisione · " : "";
   return `<div class="dl ${d.status === "done" ? "done" : ""}" data-dl="${d.id}">
     ${dateBox(d)}
     <div style="min-width:0">
       <div class="dl-title">${pre ? `<span class="muted" style="font-weight:500">${pre}</span>` : ""}${esc(d.title)}</div>
+      ${!compact && d.kind === "internal" && d.notes ? `<div class="dl-desc">${esc(d.notes)}</div>` : ""}
       <div class="dl-meta">
-        ${d.status === "done" ? `<span>completata ${d.done_at ? relTime(d.done_at) : ""}</span>${d.outcome ? `<span class="badge out-${d.outcome}" title="${esc(d.outcome_note || "")}">${d.outcome === "ok" ? "conforme" : "con rilievi"}</span>` : ""}${attChip(d.id)}` : `<span class="when ${whenCls(n)}">${whenTxt(n)}</span>`}
+        ${d.status === "done" ? `<span>completata ${d.done_at ? relTime(d.done_at) : ""}</span>${d.outcome ? `<span class="badge out-${d.outcome}" title="${esc(d.outcome_note || "")}">${d.outcome === "ok" ? "conforme" : "con rilievi"}</span>` : ""}${attChip(d.id)}` : n === null ? `<span class="muted">senza data</span>` : `<span class="when ${whenCls(n)}">${whenTxt(n)}</span>`}${d.in_progress && d.status === "open" ? `<span class="badge st-doing">in corso</span>` : ""}${d.priority && d.priority !== "medium" ? `<span class="pri-${d.priority}" style="font-weight:600">${PRIORITY[d.priority].toLowerCase()}</span>` : ""}
         <span class="badge k-${d.kind}">${DL_KIND[d.kind]}</span>
         ${d.authority ? `<span>${esc(d.authority)}</span>` : ""}
         ${d.area ? `<span class="tag">${esc(d.area)}</span>` : ""}
@@ -555,9 +554,9 @@ function dlRow(d, compact = false) {
     </div>
     <div class="dl-acts">
       ${isAlert ? `<button class="btn sm" data-goto-alert="${d.alert_id}">Apri alert</button>`
-        : isTask ? `${canToggleTask(tasks.find((t) => t.id === d.task_id)) ? `<button class="btn sm" data-task-toggle="${d.task_id}">${d.status === "done" ? "Riapri" : icon("check") + "Fatta"}</button>` : ""}<button class="btn ghost sm" data-open-task="${d.task_id}">Apri</button>`
+        : !ed && own ? `${d.kind === "internal" ? `<button class="btn ghost sm" data-progress="${d.id}" data-on="${d.in_progress ? 0 : 1}">${d.in_progress ? "Non in corso" : "Inizia"}</button>` : ""}<button class="btn sm" data-complete="${d.id}">${icon("check")}${d.kind === "control" || d.continuous ? "Attesta" : "Fatto"}</button>`
         : isPol ? `${ed ? `<button class="btn sm" data-pol-upd="${d.policy_id}">${icon("check")}Aggiornata</button>` : ""}<button class="btn ghost sm" data-open-pol="${d.policy_id}">Scheda</button>`
-        : ed ? `${d.status === "open" ? `<button class="btn sm" data-complete="${d.id}">${icon("check")}Completa</button>` : `<button class="btn ghost sm" data-reopen="${d.id}">Riapri</button>`}<button class="btn ghost sm" data-edit-dl="${d.id}">Modifica</button>` : ""}
+        : ed ? `${d.status === "open" && d.kind === "internal" && !compact ? `<button class="btn ghost sm" data-progress="${d.id}" data-on="${d.in_progress ? 0 : 1}">${d.in_progress ? "Non in corso" : "Inizia"}</button>` : ""}${d.status === "open" ? `<button class="btn sm" data-complete="${d.id}">${icon("check")}Completa</button>` : `<button class="btn ghost sm" data-reopen="${d.id}">Riapri</button>`}<button class="btn ghost sm" data-edit-dl="${d.id}">Modifica</button>` : ""}
     </div>
   </div>`;
 }
@@ -578,8 +577,9 @@ function renderDeadlines() {
   const all = dlItems();
   const open = all.filter((d) => !d.continuous);
   renderPresidi(all.filter((d) => d.continuous));
-  const over = open.filter((d) => dDays(d.due_date) < 0), week = open.filter((d) => dDays(d.due_date) >= 0 && dDays(d.due_date) <= 7);
-  const month = open.filter((d) => dDays(d.due_date) > 7 && dDays(d.due_date) <= 30), later = open.filter((d) => dDays(d.due_date) > 30);
+  const dated = open.filter((d) => d.due_date), nodate = open.filter((d) => !d.due_date);
+  const over = dated.filter((d) => dDays(d.due_date) < 0), week = dated.filter((d) => dDays(d.due_date) >= 0 && dDays(d.due_date) <= 7);
+  const month = dated.filter((d) => dDays(d.due_date) > 7 && dDays(d.due_date) <= 30), later = dated.filter((d) => dDays(d.due_date) > 30);
   $("#dl-stats").innerHTML = [[over.length, "scadute", over.length ? "var(--crit)" : ""], [week.length, "nei prossimi 7 giorni", week.length ? "var(--high)" : ""],
     [month.length, "entro 30 giorni"], [open.filter((d) => !d.assignee && !d.owner_label).length, "senza responsabile"]]
     .map(([n, l, c]) => `<div class="card stat"><b style="${c ? `color:${c}` : ""}">${n}</b><span>${l}</span></div>`).join("");
@@ -591,8 +591,8 @@ function renderDeadlines() {
 
   if (dlView === "month") { renderMonth(); return; }
   const group = (cls, label, list, note = "") => list.length ? `<div class="dl-group ${cls}"><div class="eyebrow">${label} <b>${list.length}</b>${note}</div><div class="card">${list.map((d) => dlRow(d)).join("")}</div></div>` : "";
-  const done = dlItems({ includeDone: true }).filter((d) => d.status === "done" && !d.continuous).sort((a, b) => (b.done_at || b.due_date).localeCompare(a.done_at || a.due_date)).slice(0, 15);
-  const body = group("overdue", "Scadute", over) + group("", "Prossimi 7 giorni", week) + group("", "Entro 30 giorni", month) + group("", "Più avanti", later) +
+  const done = dlItems({ includeDone: true }).filter((d) => d.status === "done" && !d.continuous).sort((a, b) => (b.done_at || b.due_date || "").localeCompare(a.done_at || a.due_date || "")).slice(0, 15);
+  const body = group("overdue", "Scadute", over) + group("", "Prossimi 7 giorni", week) + group("", "Entro 30 giorni", month) + group("", "Più avanti", later) + group("", "Attività senza data", nodate) +
     (done.length ? `<details class="dl-group"><summary class="eyebrow" style="cursor:pointer;padding-bottom:8px">Completate di recente <b>${done.length}</b></summary><div class="card">${done.map((d) => dlRow(d)).join("")}</div></details>` : "");
   $("#dl-body").innerHTML = body || `<div class="card"><div class="empty">${icon("cal")}<h3>Nessuna scadenza in agenda</h3><p>Aggiungi scadenze normative e segnalazioni periodiche, oppure fissa una scadenza interna nel triage di un alert: comparirà qui.</p>${canEdit() ? `<button class="btn primary sm" data-new-dl>${icon("plus")}Nuova scadenza</button>` : ""}</div></div>`;
 }
@@ -602,7 +602,7 @@ function renderMonth() {
   const [y, m] = base.split("-").map(Number);
   const first = new Date(Date.UTC(y, m - 1, 1)), startDow = (first.getUTCDay() + 6) % 7;
   const start = new Date(first.getTime() - startDow * 86400000);
-  const items = dlItems({ includeDone: true }).filter((d) => !d.continuous);
+  const items = dlItems({ includeDone: true }).filter((d) => !d.continuous && d.due_date);
   const byDay = {}; for (const d of items) (byDay[d.due_date] ||= []).push(d);
   const presByDay = {}; for (const d of dlItems().filter((x) => x.continuous)) presByDay[d.due_date] = (presByDay[d.due_date] || 0) + 1;
   let cells = "";
@@ -612,7 +612,7 @@ function renderMonth() {
     const evs = byDay[k] || [];
     const pres = presByDay[k] ? `<button class="cal-ev k-control" data-goto-presidi title="Attestazione dei presidi continuativi">Attestazione presidi (${presByDay[k]})</button>` : "";
     cells += `<div class="cal-d ${day.getUTCMonth() !== m - 1 ? "out" : ""} ${k === todayKey() ? "today" : ""}"><span class="n">${day.getUTCDate()}</span><div class="evs" style="display:grid;gap:3px">${pres}
-      ${evs.slice(0, 3).map((d) => `<button class="cal-ev k-${d.kind} ${d.status === "done" ? "done" : ""}" ${d._type === "alert" ? `data-goto-alert="${d.alert_id}"` : d._type === "task" ? `data-open-task="${d.task_id}"` : d._type === "policy" ? `data-open-pol="${d.policy_id}"` : `data-edit-dl="${d.id}"`} title="${esc(d.title)}">${esc(d.title)}</button>`).join("")}
+      ${evs.slice(0, 3).map((d) => `<button class="cal-ev k-${d.kind} ${d.status === "done" ? "done" : ""}" ${d._type === "alert" ? `data-goto-alert="${d.alert_id}"` : d._type === "policy" ? `data-open-pol="${d.policy_id}"` : `data-edit-dl="${d.id}"`} title="${esc(d.title)}">${esc(d.title)}</button>`).join("")}
       ${evs.length > 3 ? `<span class="cal-more">+${evs.length - 3} altre</span>` : ""}</div></div>`;
   }
   const label = first.toLocaleDateString("it-IT", { month: "long", year: "numeric", timeZone: "UTC" }).replace(/^./, (c) => c.toUpperCase());
@@ -915,26 +915,36 @@ function askOutcome(d) {
 
 function linkedDeadlinesHtml(a) {
   if (!a) return "";
-  const lt = tasks.filter((t) => t.alert_id === a.id && t.status !== "cancelled");
-  if (lt.length) return lt.map(taskRow).join("") + linkedDeadlinesHtml2(a, true);
-  return linkedDeadlinesHtml2(a, false);
-}
-function linkedDeadlinesHtml2(a, hasTasks) {
   const list = deadlines.filter((d) => d.alert_id === a.id && d.status !== "proposed").map((d) => ({ ...d, _type: "dl" }));
   const props = deadlines.filter((d) => d.alert_id === a.id && d.status === "proposed");
   return (list.map((d) => dlRow(d, true)).join("") +
     (props.length ? `<div class="ai-empty" style="border-top:1px solid var(--line)">${icon("spark")}<span>L'AI ha trovato ${props.length === 1 ? "una data" : props.length + " date"} in questo documento: confermale nello <a href="#deadlines">scadenziario</a>.</span></div>` : "")) ||
-    (hasTasks ? "" : `<div class="ai-empty">${icon("cal")}<span>Nessuna scadenza collegata. ${a.due_date ? "La scadenza interna del triage compare già nello scadenziario." : ""}</span></div>`);
+    (`<div class="ai-empty">${icon("cal")}<span>Nessuna scadenza o attività collegata. ${a.due_date ? "La scadenza interna del triage compare già nello scadenziario." : ""}</span></div>`);
 }
 
-function openDlForm(d = null, fromAlert = null) {
+async function setProgress(id, on) {
+  const { error } = await sb.rpc("ra_set_in_progress", { p_id: id, p_on: on });
+  if (error) return toast(error.message, { bad: true });
+  toast(on ? "Segnata come in corso" : "Non più in corso"); loadDeadlines();
+}
+// la data è obbligatoria per tutto tranne che per le attività
+function syncDlKind() {
+  const k = $('input[name="d-kind"]:checked').value, task = k === "internal";
+  $("#d-date-hint").hidden = !task; $("#fld-prog").hidden = !(task && editingDl?.status === "open");
+  $("#d-title-lbl").textContent = task ? "Cosa fare" : "Cosa scade";
+  $("#dl-form-title").textContent = editingDl ? (editingDl.status === "proposed" ? "Rivedi la data proposta" : task ? "Modifica attività" : "Modifica scadenza") : task ? "Nuova attività" : "Nuova scadenza";
+}
+$$('input[name="d-kind"]').forEach((r) => r.addEventListener("change", syncDlKind));
+function openDlForm(d = null, fromAlert = null, opts = {}) {
   editingDl = d;
-  const members = profiles.filter((p) => ["analyst", "admin"].includes(p.role));
+  const members = profiles.filter((p) => ["viewer", "analyst", "admin"].includes(p.role));
   $("#d-assignee").innerHTML = `<option value="">Nessuno</option>` + members.map((p) => `<option value="${p.id}">${esc(p.full_name || p.email)}${p.id === me.id ? " (tu)" : ""}</option>`).join("");
   $("#dl-form-title").textContent = d ? (d.status === "proposed" ? "Rivedi la data proposta" : "Modifica scadenza") : "Nuova scadenza";
   $("#d-title").value = d?.title || ""; $("#d-date").value = d?.due_date || "";
   $("#d-assignee").value = d?.assignee || (d ? "" : me.id);
-  $$('input[name="d-kind"]').forEach((r) => (r.checked = r.value === (d?.kind || "regulatory")));
+  $$('input[name="d-kind"]').forEach((r) => (r.checked = r.value === (d?.kind || opts.kind || "regulatory")));
+  $("#d-pri").value = d?.priority || "medium"; $("#d-prog").checked = !!d?.in_progress;
+  if (!d && opts.title) $("#d-title").value = opts.title;
   $("#d-authority").value = d?.authority || fromAlert?.source_authority || ""; $("#d-reg").value = d?.regulation || "";
   $("#d-area").value = d?.area || ""; $("#d-owner-label").value = d?.owner_label || "";
   $("#d-rec").value = d?.recurrence || "none"; $("#d-remind").value = String(d?.remind_days ?? 7);
@@ -946,11 +956,12 @@ function openDlForm(d = null, fromAlert = null) {
   $("#dl-from-alert").hidden = !la; if (la) $("#dl-from-alert").innerHTML = `Collegata all'alert: <b>${esc(la.title)}</b>`;
   $("#dlg-dl").dataset.alertId = linkId || "";
   $("#b-del-dl").hidden = !d;
+  syncDlKind();
   $("#dlg-dl").showModal(); $("#d-title").focus();
 }
 
 function exportIcs() {
-  const items = dlItems().filter((d) => d.status === "open" && !d.continuous);
+  const items = dlItems().filter((d) => d.status === "open" && !d.continuous && d.due_date);
   const fold = (l) => l.replace(/(.{70})/g, "$1\r\n ").trimEnd();
   const tx = (t) => String(t || "").replace(/\\/g, "\\\\").replace(/[,;]/g, (c) => "\\" + c).replace(/\n/g, "\\n");
   const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
@@ -959,7 +970,7 @@ function exportIcs() {
     const rr = { monthly: "FREQ=MONTHLY", quarterly: "FREQ=MONTHLY;INTERVAL=3", yearly: "FREQ=YEARLY" }[d.recurrence];
     const desc = [DL_KIND[d.kind], d.area, d.authority, d.regulation, d.owner_label && `Responsabile: ${d.owner_label}`, d.notes, d.url].filter(Boolean).join("\n");
     return ["BEGIN:VEVENT", `UID:regalert-${d.id}@regalert`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${day}`, `DTEND;VALUE=DATE:${next}`,
-      fold(`SUMMARY:${tx(({ alert: "Triage: ", task: "Attività: ", policy: "Revisione: " }[d._type] || "") + d.title)}`), fold(`DESCRIPTION:${tx(desc)}`), rr ? `RRULE:${rr}` : "",
+      fold(`SUMMARY:${tx(({ alert: "Triage: ", policy: "Revisione: " }[d._type] || (d.kind === "internal" ? "Attività: " : "")) + d.title)}`), fold(`DESCRIPTION:${tx(desc)}`), rr ? `RRULE:${rr}` : "",
       "BEGIN:VALARM", "ACTION:DISPLAY", `TRIGGER:-P${d.remind_days ?? 7}D`, fold(`DESCRIPTION:${tx(d.title)}`), "END:VALARM", "END:VEVENT"].filter(Boolean).join("\r\n");
   }).join("\r\n");
   const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//RegAlert//Scadenziario//IT", "CALSCALE:GREGORIAN", "X-WR-CALNAME:RegAlert scadenziario", ev, "END:VCALENDAR"].filter(Boolean).join("\r\n");
@@ -1440,138 +1451,6 @@ $("#scrim").onclick = closeNav;
 $$("#tabbar button[data-view]").forEach((b) => (b.onclick = () => go(b.dataset.view)));
 $("#tabbar [data-more]").onclick = () => { $("#v-app").classList.add("nav-open"); $("#scrim").hidden = false; };
 
-// ---------------------------------------------------------------- attività
-const memberName = (id) => { const p = profiles.find((x) => x.id === id); return p ? (p.full_name || p.email) : null; };
-const canToggleTask = (t) => !!t && (canEdit() || t.assignee === me.id);
-let tkView = { mine: store.get("ra_tk_mine") !== "0", done: false }, editingTask = null, taskFromAlert = null;
-
-async function loadTasks() {
-  const { data, error } = await sb.from("ra_tasks").select("*").order("due_date", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false }).limit(2000);
-  if (error) return;
-  tasks = data || [];
-  const mine = tasks.filter((t) => t.assignee === me.id && ["todo", "doing"].includes(t.status));
-  const urgent = mine.filter((t) => t.due_date && dDays(t.due_date) <= 0).length;
-  $("#nav-tasks").hidden = !mine.length; $("#nav-tasks").textContent = mine.length;
-  $("#nav-tasks").style.background = urgent ? "var(--crit)" : "";
-  if (!$("#view-tasks").hidden) renderTasks();
-  if (!$("#view-deadlines").hidden) renderDeadlines();
-  if (selectedId && $("#linked-dl")) $("#linked-dl").innerHTML = linkedDeadlinesHtml(alerts.find((a) => a.id === selectedId));
-}
-
-function taskRow(t) {
-  const n = t.due_date ? dDays(t.due_date) : null, who = profiles.find((p) => p.id === t.assignee);
-  const done = t.status === "done", can = canToggleTask(t);
-  const la = t.alert_id && alerts.find((a) => a.id === t.alert_id);
-  return `<div class="tk ${done ? "done" : ""}" data-open-task="${t.id}">
-    <button type="button" class="chk" data-task-toggle="${t.id}" ${can ? "" : "disabled"} aria-label="${done ? "Segna come da fare" : "Segna come completata"}: ${esc(t.title)}">${done ? icon("check") : ""}</button>
-    <div style="min-width:0"><div class="t">${esc(t.title)}</div>
-      ${t.description ? `<div class="desc">${esc(t.description)}</div>` : ""}
-      <div class="dl-meta">
-        ${done ? `<span>completata ${t.done_at ? relTime(t.done_at) : ""}${t.done_by && t.done_by !== t.assignee ? " da " + esc(memberName(t.done_by) || "") : ""}</span>`
-          : t.status === "cancelled" ? `<span class="badge">annullata</span>`
-          : n !== null ? `<span class="when ${whenCls(n)}">${n === 0 ? "oggi" : whenTxt(n)}</span>` : `<span class="muted">senza scadenza</span>`}
-        ${t.status === "doing" ? `<span class="badge st-doing">in corso</span>` : ""}
-        ${t.priority !== "medium" ? `<span class="pri-${t.priority}" style="font-weight:600">${PRIORITY[t.priority].toLowerCase()}</span>` : ""}
-        ${who ? `<span style="display:inline-flex;gap:5px;align-items:center">${avatar(who, "sm")}${esc(who.full_name || who.email)}</span>` : `<span>non assegnata</span>`}
-        ${la ? `<a href="#" data-goto-alert="${la.id}">alert: ${esc(la.title.slice(0, 50))}${la.title.length > 50 ? "…" : ""}</a>` : ""}
-      </div></div>
-  </div>`;
-}
-
-function renderTasks() {
-  $("#tk-mine").setAttribute("aria-pressed", tkView.mine); $("#tk-all").setAttribute("aria-pressed", !tkView.mine);
-  $("#tk-open").setAttribute("aria-pressed", !tkView.done); $("#tk-done").setAttribute("aria-pressed", tkView.done);
-  const curP = $("#tk-f-pri").value, curW = $("#tk-f-who").value;
-  $("#tk-f-pri").innerHTML = `<option value="">Priorità</option>` + Object.entries(PRIORITY).map(([k, v]) => `<option value="${k}">${v}</option>`).join(""); $("#tk-f-pri").value = curP;
-  const people = profiles.filter((p) => p.role !== "pending");
-  $("#tk-f-who").innerHTML = `<option value="">Responsabile</option><option value="none">Non assegnate</option>` + people.map((p) => `<option value="${p.id}">${esc(p.full_name || p.email)}</option>`).join(""); $("#tk-f-who").value = curW;
-  $("#tk-f-who").parentElement.hidden = tkView.mine;
-  ["#tk-f-pri", "#tk-f-who"].forEach((s) => $(s).classList.toggle("on", !!$(s).value));
-
-  const open = tasks.filter((t) => ["todo", "doing"].includes(t.status));
-  const mineOpen = open.filter((t) => t.assignee === me.id);
-  const over = open.filter((t) => t.due_date && dDays(t.due_date) < 0);
-  $("#task-stats").innerHTML = [[mineOpen.length, "assegnate a te"], [over.length, "scadute", over.length ? "var(--crit)" : ""],
-    [open.filter((t) => t.due_date && dDays(t.due_date) >= 0 && dDays(t.due_date) <= 7).length, "nei prossimi 7 giorni"], [open.filter((t) => !t.assignee).length, "non assegnate"]]
-    .map(([n, l, c]) => `<div class="card stat"><b style="${c ? `color:${c}` : ""}">${n}</b><span>${l}</span></div>`).join("");
-
-  const pri = $("#tk-f-pri").value, who = $("#tk-f-who").value;
-  const base = tasks.filter((t) => (tkView.mine ? t.assignee === me.id : !who || (who === "none" ? !t.assignee : t.assignee === who)) && (!pri || t.priority === pri));
-  const rank = { critical: 0, high: 1, medium: 2, low: 3 };
-  const byDue = (a, b) => (a.due_date || "9999").localeCompare(b.due_date || "9999") || rank[a.priority] - rank[b.priority];
-  const group = (label, list, cls = "") => list.length ? `<div class="dl-group ${cls}"><div class="eyebrow">${label} <b>${list.length}</b></div><div class="card">${list.map(taskRow).join("")}</div></div>` : "";
-  let body;
-  if (tkView.done) {
-    const list = base.filter((t) => ["done", "cancelled"].includes(t.status)).sort((a, b) => (b.done_at || b.updated_at).localeCompare(a.done_at || a.updated_at)).slice(0, 100);
-    body = group("Completate e annullate", list);
-  } else {
-    const o = base.filter((t) => ["todo", "doing"].includes(t.status)).sort(byDue);
-    const d = (t) => t.due_date ? dDays(t.due_date) : null;
-    body = group("Scadute", o.filter((t) => d(t) !== null && d(t) < 0), "overdue") + group("Oggi", o.filter((t) => d(t) === 0)) +
-      group("Prossimi 7 giorni", o.filter((t) => d(t) > 0 && d(t) <= 7)) + group("Più avanti", o.filter((t) => d(t) > 7)) + group("Senza scadenza", o.filter((t) => d(t) === null));
-  }
-  $("#task-body").innerHTML = body || `<div class="card"><div class="empty">${icon("task")}<h3>${tkView.done ? "Nessuna attività completata" : tkView.mine ? "Nessuna attività assegnata a te" : "Nessuna attività aperta"}</h3>
-    <p>Crea un'attività per assegnare un compito: aggiornare una procedura, preparare una segnalazione, rispondere a una consultazione.</p>${canEdit() ? `<button class="btn primary sm" data-add="task">${icon("plus")}Nuova attività</button>` : ""}</div></div>`;
-}
-$("#tk-mine").onclick = () => { tkView.mine = true; store.set("ra_tk_mine", "1"); renderTasks(); };
-$("#tk-all").onclick = () => { tkView.mine = false; store.set("ra_tk_mine", "0"); renderTasks(); };
-$("#tk-open").onclick = () => { tkView.done = false; renderTasks(); };
-$("#tk-done").onclick = () => { tkView.done = true; renderTasks(); };
-$("#tk-f-pri").onchange = $("#tk-f-who").onchange = renderTasks;
-
-function openTaskForm(t = null, opts = {}) {
-  editingTask = t; taskFromAlert = opts.alert || null;
-  const ed = canEdit();
-  const people = profiles.filter((p) => p.role !== "pending");
-  $("#tk-who").innerHTML = `<option value="">Non assegnata</option>` + people.map((p) => `<option value="${p.id}">${esc(p.full_name || p.email)}${p.id === me.id ? " (tu)" : ""}</option>`).join("");
-  $("#tk-pri").innerHTML = Object.entries(PRIORITY).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
-  $("#tk-h").textContent = t ? "Attività" : "Nuova attività";
-  $("#tk-title").value = t?.title || (taskFromAlert ? `Valutare: ${taskFromAlert.title}`.slice(0, 300) : "");
-  $("#tk-desc").value = t?.description || (taskFromAlert?.actions || "");
-  $("#tk-who").value = t ? (t.assignee || "") : me.id;
-  $("#tk-due").value = t?.due_date || opts.due || "";
-  $("#tk-pri").value = t?.priority || (taskFromAlert?.priority && taskFromAlert.priority !== "medium" ? taskFromAlert.priority : "medium");
-  $("#tk-st").value = t?.status || "todo";
-  const linkId = t?.alert_id || taskFromAlert?.id, la = linkId && alerts.find((a) => a.id === linkId);
-  $("#tk-link").hidden = !la; if (la) $("#tk-link").innerHTML = `Collegata all'alert: <b>${esc(la.title)}</b>`;
-  $("#tk-meta").textContent = t ? `Creata ${relTime(t.created_at)}${t.created_by ? " da " + (memberName(t.created_by) || "un membro del team") : ""}${t.updated_at !== t.created_at ? ` · modificata ${relTime(t.updated_at)}` : ""}` : "";
-  // chi non è analyst/admin può solo cambiare lo stato delle attività assegnate a lui
-  const own = t && t.assignee === me.id;
-  ["#tk-title", "#tk-desc", "#tk-who", "#tk-due", "#tk-pri"].forEach((s) => ($(s).disabled = !ed));
-  $("#tk-st").disabled = !(ed || own);
-  $("#tk-save").hidden = !(ed || own); $("#tk-del").hidden = !(t && ed);
-  $("#dlg-task").showModal(); if (ed) $("#tk-title").focus();
-}
-$("#f-task").onsubmit = async (e) => {
-  e.preventDefault();
-  const ed = canEdit();
-  const row = ed ? { title: $("#tk-title").value.trim(), description: $("#tk-desc").value.trim() || null, assignee: $("#tk-who").value || null,
-    due_date: $("#tk-due").value || null, priority: $("#tk-pri").value, status: $("#tk-st").value } : { status: $("#tk-st").value };
-  if (ed && !row.title) return toast("Scrivi cosa c'è da fare", { bad: true });
-  if (!editingTask) row.alert_id = taskFromAlert?.id || null;
-  const q = editingTask ? sb.from("ra_tasks").update(row).eq("id", editingTask.id) : sb.from("ra_tasks").insert(row);
-  const { error } = await q;
-  if (error) return toast(error.message, { bad: true });
-  $("#dlg-task").close();
-  toast(editingTask ? "Attività aggiornata" : row.assignee && row.assignee !== me.id ? `Attività assegnata a ${memberName(row.assignee)}` : "Attività creata");
-  loadTasks();
-};
-$("#tk-del").onclick = async () => {
-  if (!editingTask) return; $("#dlg-task").close();
-  if (!(await confirmBox("Eliminare l'attività?", `"${editingTask.title}" verrà eliminata. Se è stata svolta, segnala piuttosto come completata: resta nello storico.`, "Elimina"))) return;
-  const { error } = await sb.from("ra_tasks").delete().eq("id", editingTask.id);
-  error ? toast(error.message, { bad: true }) : (toast("Attività eliminata"), loadTasks());
-};
-async function toggleTask(id) {
-  const t = tasks.find((x) => x.id === id); if (!canToggleTask(t)) return;
-  const status = t.status === "done" ? "todo" : "done";
-  t.status = status; t.done_at = status === "done" ? new Date().toISOString() : null;   // risposta immediata, poi conferma dal server
-  if (!$("#view-tasks").hidden) renderTasks();
-  const { error } = await sb.from("ra_tasks").update({ status }).eq("id", id);
-  if (error) toast(error.message, { bad: true }); else toast(status === "done" ? "Attività completata" : "Attività riaperta");
-  loadTasks();
-}
-
 // ---------------------------------------------------------------- politiche e procedure
 let editingPol = null, updatingPol = null;
 const addMonths = (iso, m) => { const d = new Date(iso + "T12:00:00Z"); const day = d.getUTCDate(); d.setUTCMonth(d.getUTCMonth() + m); if (d.getUTCDate() !== day) d.setUTCDate(0); return d.toISOString().slice(0, 10); };
@@ -1728,20 +1607,18 @@ $("#b-add").onclick = (e) => { e.stopPropagation(); const open = addMenu.hidden;
 document.addEventListener("click", (e) => { if (!addMenu.hidden && !e.target.closest(".addmenu")) closeAddMenu(); });
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !addMenu.hidden) { closeAddMenu(); $("#b-add").focus(); } });
 document.addEventListener("click", (e) => {
-  const t = e.target.closest("[data-add],[data-open-task],[data-task-toggle],[data-task-from-alert],[data-open-pol],[data-pol-upd]");
+  const t = e.target.closest("[data-add],[data-task-from-alert],[data-open-pol],[data-pol-upd],[data-progress]");
   if (!t || $("#v-app").hidden) return;
-  if (e.target.closest("[data-stop]") || (e.target.closest("[data-goto-alert]") && t.hasAttribute("data-open-task"))) return;   // link interni alla riga
+  if (e.target.closest("[data-stop]")) return;   // link interni alla riga
   e.preventDefault(); e.stopPropagation(); closeAddMenu();
-  if (t.dataset.add === "task") openTaskForm(null, { due: null });
+  if (t.dataset.add === "task") openDlForm(null, null, { kind: "internal" });
   else if (t.dataset.add === "deadline") openDlForm();
   else if (t.dataset.add === "policy") openPolForm();
-  else if (t.dataset.taskToggle) toggleTask(Number(t.dataset.taskToggle));
-  else if (t.dataset.openTask) openTaskForm(tasks.find((x) => x.id === Number(t.dataset.openTask)));
-  else if (t.dataset.taskFromAlert) openTaskForm(null, { alert: alerts.find((a) => a.id === Number(t.dataset.taskFromAlert)) });
+  else if (t.dataset.taskFromAlert) { const a = alerts.find((x) => x.id === Number(t.dataset.taskFromAlert)); openDlForm(null, a, { kind: "internal", title: `Valutare: ${a?.title || ""}`.slice(0, 300) }); }
+  else if (t.dataset.progress) setProgress(Number(t.dataset.progress), t.dataset.on === "1");
   else if (t.dataset.polUpd) openPolUpdate(policies.find((x) => x.id === Number(t.dataset.polUpd)));
   else if (t.dataset.openPol) openPolForm(policies.find((x) => x.id === Number(t.dataset.openPol)));
 }, true);
-$("#b-add-task").onclick = () => openTaskForm();
 $("#b-add-pol").onclick = () => openPolForm();
 
 // ---------------------------------------------------------------- sicurezza
@@ -2102,7 +1979,7 @@ $("#b-send-digest").onclick = async () => {
 $("#dl-v-list").onclick = () => { dlView = "list"; store.set("ra_dl_view", "list"); renderDeadlines(); };
 $("#dl-v-month").onclick = () => { dlView = "month"; store.set("ra_dl_view", "month"); renderDeadlines(); };
 ["#dl-f-kind", "#dl-f-auth", "#dl-f-area"].forEach((s) => $(s).addEventListener("change", renderDeadlines));
-["#dl-f-mine", "#dl-f-alerts", "#dl-f-tasks", "#dl-f-pol"].forEach((s) => ($(s).onclick = (e) => { e.currentTarget.setAttribute("aria-pressed", e.currentTarget.getAttribute("aria-pressed") !== "true"); renderDeadlines(); }));
+["#dl-f-mine", "#dl-f-alerts", "#dl-f-pol"].forEach((s) => ($(s).onclick = (e) => { e.currentTarget.setAttribute("aria-pressed", e.currentTarget.getAttribute("aria-pressed") !== "true"); renderDeadlines(); }));
 $("#b-add-dl").onclick = () => openDlForm();
 $("#b-ics").onclick = () => { exportIcs(); logEvent("export_ics"); };
 $$("[data-close-dl]").forEach((b) => (b.onclick = () => $("#dlg-dl").close()));
@@ -2112,13 +1989,20 @@ $("#f-dl").onsubmit = async (e) => {
     assignee: $("#d-assignee").value || null, authority: $("#d-authority").value.trim() || null, regulation: $("#d-reg").value.trim() || null,
     area: $("#d-area").value.trim() || null, owner_label: $("#d-owner-label").value.trim() || null,
     recurrence: $("#d-rec").value, remind_days: Number($("#d-remind").value), url: $("#d-url").value.trim() || null, notes: $("#d-notes").value.trim() || null, continuous: $("#d-cont").checked,
-    alert_id: Number($("#dlg-dl").dataset.alertId) || null };
-  if (!row.title || !row.due_date) return toast("Indica cosa scade e la data.", { bad: true });
+    alert_id: Number($("#dlg-dl").dataset.alertId) || null, priority: $("#d-pri").value };
+  if (row.kind === "internal" && editingDl?.status === "open") row.in_progress = $("#d-prog").checked;
+  if (!row.due_date) {
+    if (row.kind !== "internal") return toast("Indica la data: è facoltativa solo per le attività.", { bad: true });
+    if (row.recurrence !== "none" || row.continuous) return toast("Un'attività ricorrente o un presidio ha bisogno di una data.", { bad: true });
+    row.due_date = null;
+  }
+  if (!row.title) return toast(row.kind === "internal" ? "Scrivi cosa c'è da fare." : "Indica cosa scade.", { bad: true });
   if (row.url && !/^https?:\/\//.test(row.url)) return toast("Il link deve iniziare con https://", { bad: true });
   if (editingDl?.status === "proposed") row.status = "open";
   const res = editingDl ? await sb.from("ra_deadlines").update(row).eq("id", editingDl.id) : await sb.from("ra_deadlines").insert(row);
   if (res.error) return toast("Scadenza non salvata: " + res.error.message, { bad: true });
-  $("#dlg-dl").close(); toast(editingDl ? "Scadenza aggiornata" : "Scadenza aggiunta"); await loadDeadlines();
+  const what = row.kind === "internal" ? "Attività" : "Scadenza";
+  $("#dlg-dl").close(); toast(editingDl ? `${what} aggiornata` : row.assignee && row.assignee !== me.id ? `${what} assegnata a ${profiles.find((p) => p.id === row.assignee)?.full_name || "un collega"}` : `${what} aggiunta`); await loadDeadlines();
 };
 $("#b-del-dl").onclick = async () => {
   if (!editingDl) return; $("#dlg-dl").close();

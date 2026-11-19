@@ -61,12 +61,11 @@ Deno.serve(async (req) => {
     const today = new Date(new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Rome" }) + "T00:00:00Z");
     const days = (d: string) => Math.round((Date.parse(d + "T00:00:00Z") - today.getTime()) / 86400000);
     const horizon = new Date(today.getTime() + 90 * 86400000).toISOString().slice(0, 10);
-    const [{ data: dls }, { data: als }, { data: ppl }, { data: tks }, { data: pols }] = await Promise.all([
-      db.from("ra_deadlines").select("title,due_date,kind,authority,assignee,owner_label,remind_days,continuous").eq("status", "open").lte("due_date", horizon),
+    const [{ data: dls }, { data: als }, { data: ppl }, { data: pols }] = await Promise.all([
+      db.from("ra_deadlines").select("title,due_date,kind,authority,assignee,owner_label,remind_days,continuous,priority").eq("status", "open").not("due_date", "is", null).lte("due_date", horizon),
       db.from("ra_alerts_view").select("title,due_date,source_authority,assignee_name,status").not("due_date", "is", null)
         .not("status", "in", "(closed,not_relevant)").lte("due_date", horizon),
       db.from("ra_profiles").select("id,full_name,email"),
-      db.from("ra_tasks").select("title,due_date,priority,assignee").in("status", ["todo", "doing"]).not("due_date", "is", null).lte("due_date", horizon),
       db.from("ra_policies").select("code,title,next_review,remind_days,owner,owner_label,area").neq("status", "retired").not("next_review", "is", null),
     ]);
     const nameOf = (id: string | null) => { const p = (ppl ?? []).find((x: { id: string }) => x.id === id); return p ? (p.full_name || p.email) : null; };
@@ -78,9 +77,6 @@ Deno.serve(async (req) => {
       ...[...presByDate].map(([due, n]) => ({ title: `Attestazione presidi continuativi: ${n} da attestare`, due_date: due, kind: "control", authority: null, assignee_name: "funzioni varie", days: days(due) })),
       ...(dls ?? []).filter((d) => !d.continuous && days(d.due_date) <= d.remind_days)
         .map((d) => ({ title: d.title, due_date: d.due_date, kind: d.kind, authority: d.authority, assignee_name: nameOf(d.assignee) ?? d.owner_label, days: days(d.due_date) })),
-      // attività: scadute o entro 3 giorni (critiche/alte entro 7)
-      ...(tks ?? []).filter((t) => days(t.due_date) <= (["critical", "high"].includes(t.priority) ? 7 : 3))
-        .map((t) => ({ title: `Attività: ${t.title}`, due_date: t.due_date, kind: "task", authority: null, assignee_name: nameOf(t.assignee), days: days(t.due_date) })),
       // politiche da rivedere entro il preavviso di ciascuna
       ...(pols ?? []).filter((p) => days(p.next_review) <= p.remind_days)
         .map((p) => ({ title: `Revisione: ${p.code ? p.code + " · " : ""}${p.title}`, due_date: p.next_review, kind: "policy", authority: p.area, assignee_name: nameOf(p.owner) ?? p.owner_label, days: days(p.next_review) })),
