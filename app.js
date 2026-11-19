@@ -3,6 +3,10 @@ const CONFIG = { url: "https://cyyblaqhuevqlcjvtmsm.supabase.co", key: "sb_publi
 
 const STATUS = { new: "Da valutare", in_review: "In valutazione", action_required: "Azione richiesta", closed: "Chiuso", not_relevant: "Non pertinente" };
 const PRIORITY = { critical: "Critica", high: "Alta", medium: "Media", low: "Bassa" };
+const TASK_ST = { todo: "Da fare", doing: "In corso", done: "Completata", cancelled: "Annullata" };
+const POL_TYPE = { policy: "Policy", procedura: "Procedura", regolamento: "Regolamento", manuale: "Manuale", altro: "Altro" };
+const POL_ST = { in_force: "In vigore", under_review: "In revisione", draft: "Bozza", retired: "Ritirata" };
+let tasks = [], policies = [], polHistory = {};
 const PRIO_LVL = { critical: 3, high: 3, medium: 2, low: 1 };
 const RELEVANCE = { high: "Rilevanza alta", medium: "Rilevanza media", low: "Rilevanza bassa", none: "Non rilevante" };
 const KIND = { rss: "Feed RSS", links: "Nuovi link", page: "Testo pagina" };
@@ -138,20 +142,22 @@ async function enter() {
   $$("[data-edit]").forEach((e) => (e.hidden = !canEdit()));
   $("#f-priority").innerHTML = `<option value="">Priorità</option>` + Object.entries(PRIORITY).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
   tab = store.get("ra_tab") || "open";
-  await Promise.all([loadProfiles(), loadSources(), loadAlerts(true), loadDeadlines()]);
+  await Promise.all([loadProfiles(), loadSources(), loadAlerts(true), loadDeadlines(), loadTasks(), loadPolicies()]);
   go(location.hash.slice(1) || store.get("ra_view") || "alerts");
   if (!window.__raLive) window.__raLive = sb.channel("ra-live")
     .on("postgres_changes", { event: "*", schema: "public", table: "ra_alerts" }, () => loadAlerts(true))
     .on("postgres_changes", { event: "*", schema: "public", table: "ra_deadlines" }, () => loadDeadlines())
+    .on("postgres_changes", { event: "*", schema: "public", table: "ra_tasks" }, () => loadTasks())
+    .on("postgres_changes", { event: "*", schema: "public", table: "ra_policies" }, () => loadPolicies())
     .subscribe();
 }
 
 function go(view) {
-  if (!["alerts", "deadlines", "sources", "team", "settings"].includes(view)) view = "alerts";
+  if (!VIEWS.includes(view)) view = "alerts";
   if (view === "settings" && me.role !== "admin") view = "alerts";
   $$("#nav button, #tabbar button[data-view]").forEach((b) => b.dataset.view === view ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current"));
-  ["alerts", "deadlines", "sources", "team", "settings"].forEach((v) => ($("#view-" + v).hidden = v !== view));
-  $("#view-title").textContent = { alerts: "Alert", deadlines: "Scadenziario", sources: "Fonti", team: "Team", settings: "Impostazioni" }[view];
+  VIEWS.forEach((v) => ($("#view-" + v).hidden = v !== view));
+  $("#view-title").textContent = { alerts: "Alert", tasks: "Attività", deadlines: "Scadenziario", policies: "Politiche", sources: "Fonti", team: "Team", settings: "Impostazioni" }[view];
   $("#search-box").hidden = view !== "alerts";
   store.set("ra_view", view);
   if (location.hash.slice(1) !== view) history.replaceState(null, "", "#" + view);
@@ -161,7 +167,10 @@ function go(view) {
   if (view === "team") renderTeam();
   if (view === "settings") loadSettings();
   if (view === "deadlines") renderDeadlines();
+  if (view === "tasks") renderTasks();
+  if (view === "policies") renderPolicies();
 }
+const VIEWS = ["alerts", "tasks", "deadlines", "policies", "sources", "team", "settings"];
 const closeNav = () => { $("#v-app").classList.remove("nav-open"); $("#scrim").hidden = true; };
 
 // ---------------------------------------------------------------- dati
@@ -331,7 +340,7 @@ function renderDetail() {
     </section>
 
     <section>
-      <div class="section-h"><h3>Scadenze collegate</h3>${ed ? `<button type="button" class="btn ghost sm" id="b-dl-from-alert" style="margin-left:auto">${icon("plus")}Aggiungi allo scadenziario</button>` : ""}</div>
+      <div class="section-h"><h3>Scadenze e attività collegate</h3>${ed ? `<span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn ghost sm" data-task-from-alert="${a.id}">${icon("task")}Crea attività</button><button type="button" class="btn ghost sm" id="b-dl-from-alert">${icon("plus")}Aggiungi allo scadenziario</button></span>` : ""}</div>
       <div class="card linked" id="linked-dl">${linkedDeadlinesHtml(a)}</div>
     </section>
 
@@ -474,7 +483,7 @@ async function loadSettings() {
 }
 
 // ---------------------------------------------------------------- scadenziario
-const DL_KIND = { regulatory: "Normativa", reporting: "Segnalazione", consultation: "Consultazione", internal: "Interna", control: "Controllo" };
+const DL_KIND = { regulatory: "Normativa", reporting: "Segnalazione", consultation: "Consultazione", internal: "Interna", control: "Controllo", task: "Attività", policy: "Revisione politica" };
 const DL_REC = { weekly: "ogni settimana", monthly: "ogni mese", quarterly: "ogni trimestre", semiannual: "ogni semestre", yearly: "ogni anno" };
 let deadlines = [], dlView = store.get("ra_dl_view") || "list", calMonth = null, editingDl = null;
 const todayKey = () => dayKey(Date.now());
@@ -512,6 +521,10 @@ function dlItems({ includeDone = false } = {}) {
   const items = deadlines.filter((d) => d.status !== "proposed" && (includeDone || d.status === "open")).map((d) => ({ ...d, _type: "dl" }));
   if (withAlerts) for (const a of alerts) if (a.due_date && (includeDone || isOpen(a)))
     items.push({ _type: "alert", id: "a" + a.id, alert_id: a.id, title: a.title, due_date: a.due_date, kind: "internal", authority: a.source_authority, assignee: a.assignee, status: isOpen(a) ? "open" : "done", recurrence: "none" });
+  if ($("#dl-f-tasks").getAttribute("aria-pressed") === "true") for (const t of tasks) if (t.due_date && t.status !== "cancelled" && (includeDone || t.status !== "done"))
+    items.push({ _type: "task", id: "t" + t.id, task_id: t.id, title: t.title, due_date: t.due_date, kind: "task", assignee: t.assignee, status: t.status === "done" ? "done" : "open", done_at: t.done_at, recurrence: "none", alert_id: t.alert_id, priority: t.priority });
+  if ($("#dl-f-pol").getAttribute("aria-pressed") === "true") for (const p of policies) if (p.next_review && p.status !== "retired")
+    items.push({ _type: "policy", id: "p" + p.id, policy_id: p.id, title: (p.code ? p.code + " · " : "") + p.title, due_date: p.next_review, kind: "policy", area: p.area, assignee: p.owner, owner_label: p.owner_label, status: "open", recurrence: "none", regulation: p.version ? "v" + p.version : null });
   return items.filter((d) => (!kind || d.kind === kind) && (!au || d.authority === au) && (!ar || d.area === ar) && (!mine || d.assignee === me.id))
     .sort((a, b) => a.due_date.localeCompare(b.due_date));
 }
@@ -523,11 +536,12 @@ function dateBox(d) {
 }
 function dlRow(d, compact = false) {
   const n = dDays(d.due_date), ed = canEdit(), who = profiles.find((p) => p.id === d.assignee);
-  const isAlert = d._type === "alert";
+  const isAlert = d._type === "alert", isTask = d._type === "task", isPol = d._type === "policy";
+  const pre = isAlert ? "Triage · " : isPol ? "Revisione · " : "";
   return `<div class="dl ${d.status === "done" ? "done" : ""}" data-dl="${d.id}">
     ${dateBox(d)}
     <div style="min-width:0">
-      <div class="dl-title">${isAlert ? `<span class="muted" style="font-weight:500">Triage · </span>` : ""}${esc(d.title)}</div>
+      <div class="dl-title">${pre ? `<span class="muted" style="font-weight:500">${pre}</span>` : ""}${esc(d.title)}</div>
       <div class="dl-meta">
         ${d.status === "done" ? `<span>completata ${d.done_at ? relTime(d.done_at) : ""}</span>${d.outcome ? `<span class="badge out-${d.outcome}" title="${esc(d.outcome_note || "")}">${d.outcome === "ok" ? "conforme" : "con rilievi"}</span>` : ""}${attChip(d.id)}` : `<span class="when ${whenCls(n)}">${whenTxt(n)}</span>`}
         <span class="badge k-${d.kind}">${DL_KIND[d.kind]}</span>
@@ -541,6 +555,8 @@ function dlRow(d, compact = false) {
     </div>
     <div class="dl-acts">
       ${isAlert ? `<button class="btn sm" data-goto-alert="${d.alert_id}">Apri alert</button>`
+        : isTask ? `${canToggleTask(tasks.find((t) => t.id === d.task_id)) ? `<button class="btn sm" data-task-toggle="${d.task_id}">${d.status === "done" ? "Riapri" : icon("check") + "Fatta"}</button>` : ""}<button class="btn ghost sm" data-open-task="${d.task_id}">Apri</button>`
+        : isPol ? `${ed ? `<button class="btn sm" data-pol-upd="${d.policy_id}">${icon("check")}Aggiornata</button>` : ""}<button class="btn ghost sm" data-open-pol="${d.policy_id}">Scheda</button>`
         : ed ? `${d.status === "open" ? `<button class="btn sm" data-complete="${d.id}">${icon("check")}Completa</button>` : `<button class="btn ghost sm" data-reopen="${d.id}">Riapri</button>`}<button class="btn ghost sm" data-edit-dl="${d.id}">Modifica</button>` : ""}
     </div>
   </div>`;
@@ -596,7 +612,7 @@ function renderMonth() {
     const evs = byDay[k] || [];
     const pres = presByDay[k] ? `<button class="cal-ev k-control" data-goto-presidi title="Attestazione dei presidi continuativi">Attestazione presidi (${presByDay[k]})</button>` : "";
     cells += `<div class="cal-d ${day.getUTCMonth() !== m - 1 ? "out" : ""} ${k === todayKey() ? "today" : ""}"><span class="n">${day.getUTCDate()}</span><div class="evs" style="display:grid;gap:3px">${pres}
-      ${evs.slice(0, 3).map((d) => `<button class="cal-ev k-${d.kind} ${d.status === "done" ? "done" : ""}" ${d._type === "alert" ? `data-goto-alert="${d.alert_id}"` : `data-edit-dl="${d.id}"`} title="${esc(d.title)}">${esc(d.title)}</button>`).join("")}
+      ${evs.slice(0, 3).map((d) => `<button class="cal-ev k-${d.kind} ${d.status === "done" ? "done" : ""}" ${d._type === "alert" ? `data-goto-alert="${d.alert_id}"` : d._type === "task" ? `data-open-task="${d.task_id}"` : d._type === "policy" ? `data-open-pol="${d.policy_id}"` : `data-edit-dl="${d.id}"`} title="${esc(d.title)}">${esc(d.title)}</button>`).join("")}
       ${evs.length > 3 ? `<span class="cal-more">+${evs.length - 3} altre</span>` : ""}</div></div>`;
   }
   const label = first.toLocaleDateString("it-IT", { month: "long", year: "numeric", timeZone: "UTC" }).replace(/^./, (c) => c.toUpperCase());
@@ -899,11 +915,16 @@ function askOutcome(d) {
 
 function linkedDeadlinesHtml(a) {
   if (!a) return "";
+  const lt = tasks.filter((t) => t.alert_id === a.id && t.status !== "cancelled");
+  if (lt.length) return lt.map(taskRow).join("") + linkedDeadlinesHtml2(a, true);
+  return linkedDeadlinesHtml2(a, false);
+}
+function linkedDeadlinesHtml2(a, hasTasks) {
   const list = deadlines.filter((d) => d.alert_id === a.id && d.status !== "proposed").map((d) => ({ ...d, _type: "dl" }));
   const props = deadlines.filter((d) => d.alert_id === a.id && d.status === "proposed");
   return (list.map((d) => dlRow(d, true)).join("") +
     (props.length ? `<div class="ai-empty" style="border-top:1px solid var(--line)">${icon("spark")}<span>L'AI ha trovato ${props.length === 1 ? "una data" : props.length + " date"} in questo documento: confermale nello <a href="#deadlines">scadenziario</a>.</span></div>` : "")) ||
-    `<div class="ai-empty">${icon("cal")}<span>Nessuna scadenza collegata. ${a.due_date ? "La scadenza interna del triage compare già nello scadenziario." : ""}</span></div>`;
+    (hasTasks ? "" : `<div class="ai-empty">${icon("cal")}<span>Nessuna scadenza collegata. ${a.due_date ? "La scadenza interna del triage compare già nello scadenziario." : ""}</span></div>`);
 }
 
 function openDlForm(d = null, fromAlert = null) {
@@ -938,7 +959,7 @@ function exportIcs() {
     const rr = { monthly: "FREQ=MONTHLY", quarterly: "FREQ=MONTHLY;INTERVAL=3", yearly: "FREQ=YEARLY" }[d.recurrence];
     const desc = [DL_KIND[d.kind], d.area, d.authority, d.regulation, d.owner_label && `Responsabile: ${d.owner_label}`, d.notes, d.url].filter(Boolean).join("\n");
     return ["BEGIN:VEVENT", `UID:regalert-${d.id}@regalert`, `DTSTAMP:${stamp}`, `DTSTART;VALUE=DATE:${day}`, `DTEND;VALUE=DATE:${next}`,
-      fold(`SUMMARY:${tx((d._type === "alert" ? "Triage: " : "") + d.title)}`), fold(`DESCRIPTION:${tx(desc)}`), rr ? `RRULE:${rr}` : "",
+      fold(`SUMMARY:${tx(({ alert: "Triage: ", task: "Attività: ", policy: "Revisione: " }[d._type] || "") + d.title)}`), fold(`DESCRIPTION:${tx(desc)}`), rr ? `RRULE:${rr}` : "",
       "BEGIN:VALARM", "ACTION:DISPLAY", `TRIGGER:-P${d.remind_days ?? 7}D`, fold(`DESCRIPTION:${tx(d.title)}`), "END:VALARM", "END:VEVENT"].filter(Boolean).join("\r\n");
   }).join("\r\n");
   const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//RegAlert//Scadenziario//IT", "CALSCALE:GREGORIAN", "X-WR-CALNAME:RegAlert scadenziario", ev, "END:VCALENDAR"].filter(Boolean).join("\r\n");
@@ -1419,6 +1440,310 @@ $("#scrim").onclick = closeNav;
 $$("#tabbar button[data-view]").forEach((b) => (b.onclick = () => go(b.dataset.view)));
 $("#tabbar [data-more]").onclick = () => { $("#v-app").classList.add("nav-open"); $("#scrim").hidden = false; };
 
+// ---------------------------------------------------------------- attività
+const memberName = (id) => { const p = profiles.find((x) => x.id === id); return p ? (p.full_name || p.email) : null; };
+const canToggleTask = (t) => !!t && (canEdit() || t.assignee === me.id);
+let tkView = { mine: store.get("ra_tk_mine") !== "0", done: false }, editingTask = null, taskFromAlert = null;
+
+async function loadTasks() {
+  const { data, error } = await sb.from("ra_tasks").select("*").order("due_date", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false }).limit(2000);
+  if (error) return;
+  tasks = data || [];
+  const mine = tasks.filter((t) => t.assignee === me.id && ["todo", "doing"].includes(t.status));
+  const urgent = mine.filter((t) => t.due_date && dDays(t.due_date) <= 0).length;
+  $("#nav-tasks").hidden = !mine.length; $("#nav-tasks").textContent = mine.length;
+  $("#nav-tasks").style.background = urgent ? "var(--crit)" : "";
+  if (!$("#view-tasks").hidden) renderTasks();
+  if (!$("#view-deadlines").hidden) renderDeadlines();
+  if (selectedId && $("#linked-dl")) $("#linked-dl").innerHTML = linkedDeadlinesHtml(alerts.find((a) => a.id === selectedId));
+}
+
+function taskRow(t) {
+  const n = t.due_date ? dDays(t.due_date) : null, who = profiles.find((p) => p.id === t.assignee);
+  const done = t.status === "done", can = canToggleTask(t);
+  const la = t.alert_id && alerts.find((a) => a.id === t.alert_id);
+  return `<div class="tk ${done ? "done" : ""}" data-open-task="${t.id}">
+    <button type="button" class="chk" data-task-toggle="${t.id}" ${can ? "" : "disabled"} aria-label="${done ? "Segna come da fare" : "Segna come completata"}: ${esc(t.title)}">${done ? icon("check") : ""}</button>
+    <div style="min-width:0"><div class="t">${esc(t.title)}</div>
+      ${t.description ? `<div class="desc">${esc(t.description)}</div>` : ""}
+      <div class="dl-meta">
+        ${done ? `<span>completata ${t.done_at ? relTime(t.done_at) : ""}${t.done_by && t.done_by !== t.assignee ? " da " + esc(memberName(t.done_by) || "") : ""}</span>`
+          : t.status === "cancelled" ? `<span class="badge">annullata</span>`
+          : n !== null ? `<span class="when ${whenCls(n)}">${n === 0 ? "oggi" : whenTxt(n)}</span>` : `<span class="muted">senza scadenza</span>`}
+        ${t.status === "doing" ? `<span class="badge st-doing">in corso</span>` : ""}
+        ${t.priority !== "medium" ? `<span class="pri-${t.priority}" style="font-weight:600">${PRIORITY[t.priority].toLowerCase()}</span>` : ""}
+        ${who ? `<span style="display:inline-flex;gap:5px;align-items:center">${avatar(who, "sm")}${esc(who.full_name || who.email)}</span>` : `<span>non assegnata</span>`}
+        ${la ? `<a href="#" data-goto-alert="${la.id}">alert: ${esc(la.title.slice(0, 50))}${la.title.length > 50 ? "…" : ""}</a>` : ""}
+      </div></div>
+  </div>`;
+}
+
+function renderTasks() {
+  $("#tk-mine").setAttribute("aria-pressed", tkView.mine); $("#tk-all").setAttribute("aria-pressed", !tkView.mine);
+  $("#tk-open").setAttribute("aria-pressed", !tkView.done); $("#tk-done").setAttribute("aria-pressed", tkView.done);
+  const curP = $("#tk-f-pri").value, curW = $("#tk-f-who").value;
+  $("#tk-f-pri").innerHTML = `<option value="">Priorità</option>` + Object.entries(PRIORITY).map(([k, v]) => `<option value="${k}">${v}</option>`).join(""); $("#tk-f-pri").value = curP;
+  const people = profiles.filter((p) => p.role !== "pending");
+  $("#tk-f-who").innerHTML = `<option value="">Responsabile</option><option value="none">Non assegnate</option>` + people.map((p) => `<option value="${p.id}">${esc(p.full_name || p.email)}</option>`).join(""); $("#tk-f-who").value = curW;
+  $("#tk-f-who").parentElement.hidden = tkView.mine;
+  ["#tk-f-pri", "#tk-f-who"].forEach((s) => $(s).classList.toggle("on", !!$(s).value));
+
+  const open = tasks.filter((t) => ["todo", "doing"].includes(t.status));
+  const mineOpen = open.filter((t) => t.assignee === me.id);
+  const over = open.filter((t) => t.due_date && dDays(t.due_date) < 0);
+  $("#task-stats").innerHTML = [[mineOpen.length, "assegnate a te"], [over.length, "scadute", over.length ? "var(--crit)" : ""],
+    [open.filter((t) => t.due_date && dDays(t.due_date) >= 0 && dDays(t.due_date) <= 7).length, "nei prossimi 7 giorni"], [open.filter((t) => !t.assignee).length, "non assegnate"]]
+    .map(([n, l, c]) => `<div class="card stat"><b style="${c ? `color:${c}` : ""}">${n}</b><span>${l}</span></div>`).join("");
+
+  const pri = $("#tk-f-pri").value, who = $("#tk-f-who").value;
+  const base = tasks.filter((t) => (tkView.mine ? t.assignee === me.id : !who || (who === "none" ? !t.assignee : t.assignee === who)) && (!pri || t.priority === pri));
+  const rank = { critical: 0, high: 1, medium: 2, low: 3 };
+  const byDue = (a, b) => (a.due_date || "9999").localeCompare(b.due_date || "9999") || rank[a.priority] - rank[b.priority];
+  const group = (label, list, cls = "") => list.length ? `<div class="dl-group ${cls}"><div class="eyebrow">${label} <b>${list.length}</b></div><div class="card">${list.map(taskRow).join("")}</div></div>` : "";
+  let body;
+  if (tkView.done) {
+    const list = base.filter((t) => ["done", "cancelled"].includes(t.status)).sort((a, b) => (b.done_at || b.updated_at).localeCompare(a.done_at || a.updated_at)).slice(0, 100);
+    body = group("Completate e annullate", list);
+  } else {
+    const o = base.filter((t) => ["todo", "doing"].includes(t.status)).sort(byDue);
+    const d = (t) => t.due_date ? dDays(t.due_date) : null;
+    body = group("Scadute", o.filter((t) => d(t) !== null && d(t) < 0), "overdue") + group("Oggi", o.filter((t) => d(t) === 0)) +
+      group("Prossimi 7 giorni", o.filter((t) => d(t) > 0 && d(t) <= 7)) + group("Più avanti", o.filter((t) => d(t) > 7)) + group("Senza scadenza", o.filter((t) => d(t) === null));
+  }
+  $("#task-body").innerHTML = body || `<div class="card"><div class="empty">${icon("task")}<h3>${tkView.done ? "Nessuna attività completata" : tkView.mine ? "Nessuna attività assegnata a te" : "Nessuna attività aperta"}</h3>
+    <p>Crea un'attività per assegnare un compito: aggiornare una procedura, preparare una segnalazione, rispondere a una consultazione.</p>${canEdit() ? `<button class="btn primary sm" data-add="task">${icon("plus")}Nuova attività</button>` : ""}</div></div>`;
+}
+$("#tk-mine").onclick = () => { tkView.mine = true; store.set("ra_tk_mine", "1"); renderTasks(); };
+$("#tk-all").onclick = () => { tkView.mine = false; store.set("ra_tk_mine", "0"); renderTasks(); };
+$("#tk-open").onclick = () => { tkView.done = false; renderTasks(); };
+$("#tk-done").onclick = () => { tkView.done = true; renderTasks(); };
+$("#tk-f-pri").onchange = $("#tk-f-who").onchange = renderTasks;
+
+function openTaskForm(t = null, opts = {}) {
+  editingTask = t; taskFromAlert = opts.alert || null;
+  const ed = canEdit();
+  const people = profiles.filter((p) => p.role !== "pending");
+  $("#tk-who").innerHTML = `<option value="">Non assegnata</option>` + people.map((p) => `<option value="${p.id}">${esc(p.full_name || p.email)}${p.id === me.id ? " (tu)" : ""}</option>`).join("");
+  $("#tk-pri").innerHTML = Object.entries(PRIORITY).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+  $("#tk-h").textContent = t ? "Attività" : "Nuova attività";
+  $("#tk-title").value = t?.title || (taskFromAlert ? `Valutare: ${taskFromAlert.title}`.slice(0, 300) : "");
+  $("#tk-desc").value = t?.description || (taskFromAlert?.actions || "");
+  $("#tk-who").value = t ? (t.assignee || "") : me.id;
+  $("#tk-due").value = t?.due_date || opts.due || "";
+  $("#tk-pri").value = t?.priority || (taskFromAlert?.priority && taskFromAlert.priority !== "medium" ? taskFromAlert.priority : "medium");
+  $("#tk-st").value = t?.status || "todo";
+  const linkId = t?.alert_id || taskFromAlert?.id, la = linkId && alerts.find((a) => a.id === linkId);
+  $("#tk-link").hidden = !la; if (la) $("#tk-link").innerHTML = `Collegata all'alert: <b>${esc(la.title)}</b>`;
+  $("#tk-meta").textContent = t ? `Creata ${relTime(t.created_at)}${t.created_by ? " da " + (memberName(t.created_by) || "un membro del team") : ""}${t.updated_at !== t.created_at ? ` · modificata ${relTime(t.updated_at)}` : ""}` : "";
+  // chi non è analyst/admin può solo cambiare lo stato delle attività assegnate a lui
+  const own = t && t.assignee === me.id;
+  ["#tk-title", "#tk-desc", "#tk-who", "#tk-due", "#tk-pri"].forEach((s) => ($(s).disabled = !ed));
+  $("#tk-st").disabled = !(ed || own);
+  $("#tk-save").hidden = !(ed || own); $("#tk-del").hidden = !(t && ed);
+  $("#dlg-task").showModal(); if (ed) $("#tk-title").focus();
+}
+$("#f-task").onsubmit = async (e) => {
+  e.preventDefault();
+  const ed = canEdit();
+  const row = ed ? { title: $("#tk-title").value.trim(), description: $("#tk-desc").value.trim() || null, assignee: $("#tk-who").value || null,
+    due_date: $("#tk-due").value || null, priority: $("#tk-pri").value, status: $("#tk-st").value } : { status: $("#tk-st").value };
+  if (ed && !row.title) return toast("Scrivi cosa c'è da fare", { bad: true });
+  if (!editingTask) row.alert_id = taskFromAlert?.id || null;
+  const q = editingTask ? sb.from("ra_tasks").update(row).eq("id", editingTask.id) : sb.from("ra_tasks").insert(row);
+  const { error } = await q;
+  if (error) return toast(error.message, { bad: true });
+  $("#dlg-task").close();
+  toast(editingTask ? "Attività aggiornata" : row.assignee && row.assignee !== me.id ? `Attività assegnata a ${memberName(row.assignee)}` : "Attività creata");
+  loadTasks();
+};
+$("#tk-del").onclick = async () => {
+  if (!editingTask) return; $("#dlg-task").close();
+  if (!(await confirmBox("Eliminare l'attività?", `"${editingTask.title}" verrà eliminata. Se è stata svolta, segnala piuttosto come completata: resta nello storico.`, "Elimina"))) return;
+  const { error } = await sb.from("ra_tasks").delete().eq("id", editingTask.id);
+  error ? toast(error.message, { bad: true }) : (toast("Attività eliminata"), loadTasks());
+};
+async function toggleTask(id) {
+  const t = tasks.find((x) => x.id === id); if (!canToggleTask(t)) return;
+  const status = t.status === "done" ? "todo" : "done";
+  t.status = status; t.done_at = status === "done" ? new Date().toISOString() : null;   // risposta immediata, poi conferma dal server
+  if (!$("#view-tasks").hidden) renderTasks();
+  const { error } = await sb.from("ra_tasks").update({ status }).eq("id", id);
+  if (error) toast(error.message, { bad: true }); else toast(status === "done" ? "Attività completata" : "Attività riaperta");
+  loadTasks();
+}
+
+// ---------------------------------------------------------------- politiche e procedure
+let editingPol = null, updatingPol = null;
+const addMonths = (iso, m) => { const d = new Date(iso + "T12:00:00Z"); const day = d.getUTCDate(); d.setUTCMonth(d.getUTCMonth() + m); if (d.getUTCDate() !== day) d.setUTCDate(0); return d.toISOString().slice(0, 10); };
+const fmtDate = (iso) => iso ? iso.split("-").reverse().join("/") : "—";
+
+async function loadPolicies() {
+  const { data, error } = await sb.from("ra_policies").select("*").order("next_review", { ascending: true, nullsFirst: false }).limit(2000);
+  if (error) return;
+  policies = data || []; polHistory = {};
+  const due = policies.filter((p) => p.status !== "retired" && p.next_review && dDays(p.next_review) <= p.remind_days);
+  const late = due.some((p) => dDays(p.next_review) < 0);
+  $("#nav-pol").hidden = !due.length; $("#nav-pol").textContent = due.length; $("#nav-pol").style.background = late ? "var(--crit)" : "";
+  if (!$("#view-policies").hidden) renderPolicies();
+  if (!$("#view-deadlines").hidden) renderDeadlines();
+}
+function polRow(p) {
+  const n = p.next_review ? dDays(p.next_review) : null, who = profiles.find((x) => x.id === p.owner), ed = canEdit();
+  const url = safeUrl(p.url);
+  return `<div class="pol ${p.status}" data-open-pol="${p.id}">
+    <div style="min-width:0">
+      <div class="t">${p.code ? `<span class="mono muted">${esc(p.code)}</span> · ` : ""}${esc(p.title)}</div>
+      <div class="dl-meta">
+        <span class="badge">${POL_TYPE[p.doc_type]}</span>
+        ${p.status !== "in_force" ? `<span class="badge ${p.status === "under_review" ? "s-in_review" : ""}">${POL_ST[p.status]}</span>` : ""}
+        ${p.version ? `<span class="mono">v${esc(p.version)}</span>` : ""}
+        ${p.area ? `<span class="tag">${esc(p.area)}</span>` : ""}
+        ${who ? `<span style="display:inline-flex;gap:5px;align-items:center">${avatar(who, "sm")}${esc(who.full_name || who.email)}</span>` : p.owner_label ? `<span>${esc(p.owner_label)}</span>` : `<span class="muted">senza responsabile</span>`}
+        ${p.approver ? `<span>approvata da ${esc(p.approver)}</span>` : ""}
+        ${url ? `<a href="${esc(url)}" target="_blank" rel="noopener" data-stop>documento ${icon("ext").replace("<svg", '<svg style="width:12px;height:12px;vertical-align:-1px"')}</a>` : ""}
+      </div>
+    </div>
+    <div class="rev">
+      <span class="muted">Aggiornata il <b style="color:var(--fg-2)">${fmtDate(p.last_updated)}</b></span>
+      ${p.status === "retired" ? `<span class="muted">non più in uso</span>` : n === null ? `<span class="muted">nessuna revisione fissata</span>` : `<span>Rivedere entro <b>${fmtDate(p.next_review)}</b></span><span class="when ${whenCls(n)}">${whenTxt(n)}</span>`}
+    </div>
+    <div class="dl-acts acts">${ed && p.status !== "retired" ? `<button class="btn sm" data-pol-upd="${p.id}">${icon("check")}Aggiornata</button>` : ""}</div>
+  </div>`;
+}
+function renderPolicies() {
+  const areas = [...new Set(policies.map((p) => p.area).filter(Boolean))].sort();
+  const curA = $("#pol-f-area").value, curS = $("#pol-f-status").value;
+  $("#pol-f-area").innerHTML = `<option value="">Area</option>` + areas.map((a) => `<option>${esc(a)}</option>`).join(""); $("#pol-f-area").value = curA;
+  $("#pol-f-area").parentElement.hidden = !areas.length;
+  $("#pol-f-status").innerHTML = `<option value="">Stato</option>` + Object.entries(POL_ST).map(([k, v]) => `<option value="${k}">${v}</option>`).join(""); $("#pol-f-status").value = curS;
+  $("#pol-areas").innerHTML = areas.map((a) => `<option>${esc(a)}</option>`).join("");
+  ["#pol-f-area", "#pol-f-status"].forEach((s) => $(s).classList.toggle("on", !!$(s).value));
+
+  const live = policies.filter((p) => p.status !== "retired");
+  const late = live.filter((p) => p.next_review && dDays(p.next_review) < 0), soon = live.filter((p) => p.next_review && dDays(p.next_review) >= 0 && dDays(p.next_review) <= 60);
+  $("#pol-stats").innerHTML = [[live.length, "in registro"], [late.length, "revisione scaduta", late.length ? "var(--crit)" : ""], [soon.length, "da rivedere entro 60 giorni", soon.length ? "var(--high)" : ""],
+    [live.filter((p) => !p.next_review).length, "senza data di revisione"]].map(([n, l, c]) => `<div class="card stat"><b style="${c ? `color:${c}` : ""}">${n}</b><span>${l}</span></div>`).join("");
+
+  const q = $("#pol-q").value.trim().toLowerCase(), ar = $("#pol-f-area").value, st = $("#pol-f-status").value, dueOnly = $("#pol-f-due").getAttribute("aria-pressed") === "true";
+  const list = policies.filter((p) => (!q || `${p.code || ""} ${p.title} ${p.area || ""} ${p.regulation || ""}`.toLowerCase().includes(q)) && (!ar || p.area === ar)
+    && (st ? p.status === st : p.status !== "retired" || q) && (!dueOnly || (p.next_review && p.status !== "retired" && dDays(p.next_review) <= Math.max(60, p.remind_days))))
+    .sort((a, b) => (a.status === "retired") - (b.status === "retired") || (a.next_review || "9999").localeCompare(b.next_review || "9999") || a.title.localeCompare(b.title, "it", { numeric: true }));
+  $("#pol-body").innerHTML = list.length ? `<div class="card">${list.map(polRow).join("")}</div>`
+    : `<div class="card"><div class="empty">${icon("policy")}<h3>${policies.length ? "Nessuna politica con questi filtri" : "Il registro è vuoto"}</h3><p>Aggiungi le politiche e le procedure interne con la data dell'ultimo aggiornamento e la periodicità di revisione: RegAlert ti avvisa quando vanno riviste.</p>${canEdit() && !policies.length ? `<button class="btn primary sm" data-add="policy">${icon("plus")}Nuova politica</button>` : ""}</div></div>`;
+}
+$("#pol-q").oninput = renderPolicies; $("#pol-f-area").onchange = $("#pol-f-status").onchange = renderPolicies;
+$("#pol-f-due").onclick = (e) => { e.currentTarget.setAttribute("aria-pressed", e.currentTarget.getAttribute("aria-pressed") !== "true"); renderPolicies(); };
+
+function polNextFromForm() {
+  const m = +$("#pl-every").value, last = $("#pl-last").value;
+  return m && last ? addMonths(last, m) : "";
+}
+async function openPolForm(p = null) {
+  editingPol = p; const ed = canEdit();
+  const people = profiles.filter((x) => ["analyst", "admin", "viewer"].includes(x.role));
+  $("#pl-h").textContent = p ? (p.code ? `${p.code} · ${p.title}` : p.title) : "Nuova politica";
+  $("#pl-type").innerHTML = Object.entries(POL_TYPE).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+  $("#pl-status").innerHTML = Object.entries(POL_ST).map(([k, v]) => `<option value="${k}">${v}</option>`).join("");
+  $("#pl-owner").innerHTML = `<option value="">Nessuno</option>` + people.map((x) => `<option value="${x.id}">${esc(x.full_name || x.email)}</option>`).join("");
+  $("#pl-title").value = p?.title || ""; $("#pl-code").value = p?.code || ""; $("#pl-type").value = p?.doc_type || "policy"; $("#pl-status").value = p?.status || "in_force";
+  $("#pl-area").value = p?.area || ""; $("#pl-reg").value = p?.regulation || ""; $("#pl-owner").value = p?.owner || ""; $("#pl-owner-label").value = p?.owner_label || "";
+  $("#pl-approver").value = p?.approver || ""; $("#pl-version").value = p?.version || ""; $("#pl-last").value = p?.last_updated || "";
+  $("#pl-every").value = p?.review_months ? String(p.review_months) : (p ? "" : "12");
+  if (p?.review_months && ![...$("#pl-every").options].some((o) => o.value === String(p.review_months))) $("#pl-every").insertAdjacentHTML("beforeend", `<option value="${p.review_months}">Ogni ${p.review_months} mesi</option>`), ($("#pl-every").value = String(p.review_months));
+  $("#pl-next").value = p?.next_review || ""; $("#pl-remind").value = String(p?.remind_days ?? 30);
+  if (![...$("#pl-remind").options].some((o) => o.value === $("#pl-remind").value)) $("#pl-remind").value = "30";
+  $("#pl-url").value = p?.url || ""; $("#pl-notes").value = p?.notes || "";
+  $$("#f-pol input, #f-pol select, #f-pol textarea").forEach((el) => (el.disabled = !ed));
+  $("#f-pol .dlg-f .btn.primary").hidden = !ed; $("#pl-del").hidden = !(p && ed);
+  $("#pl-history").innerHTML = "";
+  $("#dlg-pol").showModal(); if (ed) $("#pl-title").focus();
+  if (p) {
+    const { data } = await sb.from("ra_policy_versions").select("*").eq("policy_id", p.id).order("updated_on", { ascending: false }).order("recorded_at", { ascending: false });
+    const h = data || [];
+    $("#pl-history").innerHTML = `<div class="field"><label>Storico degli aggiornamenti</label>${h.length ? `<div class="hist">${h.map((v) => `<div><span class="mono">${fmtDate(v.updated_on)}</span><span class="mono">${v.version ? "v" + esc(v.version) : "—"}</span><span>${esc(v.note || "")}${v.approved_by ? ` <span class="muted">· approvata da ${esc(v.approved_by)}</span>` : ""}<span class="muted"> · registrata da ${esc(memberName(v.recorded_by) || "—")} ${relTime(v.recorded_at)}</span></span></div>`).join("")}</div>`
+      : `<span class="hint">Nessun aggiornamento registrato da RegAlert. Usa "Aggiornata" quando esce una nuova versione: entrerà qui.</span>`}</div>`;
+  }
+}
+["#pl-last", "#pl-every"].forEach((s) => $(s).addEventListener("change", () => { const n = polNextFromForm(); if (n) $("#pl-next").value = n; }));
+$("#f-pol").onsubmit = async (e) => {
+  e.preventDefault();
+  const url = $("#pl-url").value.trim();
+  const row = { title: $("#pl-title").value.trim(), code: $("#pl-code").value.trim() || null, doc_type: $("#pl-type").value, status: $("#pl-status").value,
+    area: $("#pl-area").value.trim() || null, regulation: $("#pl-reg").value.trim() || null, owner: $("#pl-owner").value || null, owner_label: $("#pl-owner-label").value.trim() || null,
+    approver: $("#pl-approver").value.trim() || null, version: $("#pl-version").value.trim() || null, last_updated: $("#pl-last").value || null,
+    review_months: $("#pl-every").value ? +$("#pl-every").value : null, next_review: $("#pl-next").value || polNextFromForm() || null,
+    remind_days: +$("#pl-remind").value, url: url || null, notes: $("#pl-notes").value.trim() || null };
+  if (!row.title) return toast("Indica il titolo", { bad: true });
+  if (url && !/^https?:\/\//i.test(url)) return toast("Il link deve iniziare con https://", { bad: true });
+  if (row.last_updated && row.last_updated > todayKey()) return toast("L'ultimo aggiornamento non può essere nel futuro", { bad: true });
+  const { error } = editingPol ? await sb.from("ra_policies").update(row).eq("id", editingPol.id) : await sb.from("ra_policies").insert(row);
+  if (error) return toast(/duplicate|unique/i.test(error.message) ? "Esiste già una politica con questo codice" : error.message, { bad: true });
+  $("#dlg-pol").close(); toast(editingPol ? "Politica aggiornata" : "Politica aggiunta al registro"); loadPolicies();
+};
+$("#pl-del").onclick = async () => {
+  if (!editingPol) return; $("#dlg-pol").close();
+  if (!(await confirmBox("Eliminare dal registro?", `"${editingPol.title}" e il suo storico verranno eliminati. Se non è più in uso, imposta piuttosto lo stato "Ritirata": resta consultabile.`, "Elimina"))) return;
+  const { error } = await sb.from("ra_policies").delete().eq("id", editingPol.id);
+  error ? toast(error.message, { bad: true }) : (toast("Politica eliminata"), loadPolicies());
+};
+function bumpVersion(v) {
+  if (!v) return "1.0";
+  const m = String(v).match(/^(.*?)(\d+)(?:\.(\d+))?$/);
+  return m ? (m[3] !== undefined ? `${m[1]}${m[2]}.${+m[3] + 1}` : `${m[1]}${+m[2] + 1}`) : v;
+}
+function openPolUpdate(p) {
+  updatingPol = p;
+  $("#pu-what").textContent = (p.code ? p.code + " · " : "") + p.title + (p.version ? ` (in vigore: v${p.version})` : "");
+  $("#pu-version").value = bumpVersion(p.version); $("#pu-date").value = todayKey(); $("#pu-approver").value = p.approver || ""; $("#pu-note").value = "";
+  const calc = () => { $("#pu-next").value = p.review_months && $("#pu-date").value ? addMonths($("#pu-date").value, p.review_months) : ""; $("#pu-next-hint").textContent = p.review_months ? `Calcolata: revisione ogni ${p.review_months} mesi.` : "Nessuna periodicità impostata: indica tu la data."; };
+  calc(); $("#pu-date").onchange = calc;
+  $("#dlg-polupd").showModal(); $("#pu-version").focus();
+}
+$("#f-polupd").onsubmit = async (e) => {
+  e.preventDefault();
+  const date = $("#pu-date").value;
+  if (!date) return toast("Indica la data dell'aggiornamento", { bad: true });
+  if (date > todayKey()) return toast("La data non può essere nel futuro", { bad: true });
+  const { data, error } = await sb.rpc("ra_policy_record_update", { p_id: updatingPol.id, p_version: $("#pu-version").value.trim(), p_date: date,
+    p_approved_by: $("#pu-approver").value.trim() || null, p_note: $("#pu-note").value.trim() || null, p_next_review: $("#pu-next").value || null });
+  if (error) return toast(error.message, { bad: true });
+  $("#dlg-polupd").close();
+  toast(data ? `Aggiornamento registrato: prossima revisione entro il ${fmtDate(data)}` : "Aggiornamento registrato"); loadPolicies();
+};
+$("#b-pol-csv").onclick = () => {
+  if (!policies.length) return toast("Il registro è vuoto");
+  const head = ["Codice", "Titolo", "Tipo", "Stato", "Area", "Riferimento normativo", "Responsabile", "Approvata da", "Versione", "Ultimo aggiornamento", "Revisione (mesi)", "Da rivedere entro", "Giorni alla revisione", "Link", "Note"];
+  const rows = [...policies].sort((a, b) => (a.code || a.title).localeCompare(b.code || b.title, "it", { numeric: true }));
+  const csv = "﻿" + [head.map(csvCell).join(";"), ...rows.map((p) => [p.code, p.title, POL_TYPE[p.doc_type], POL_ST[p.status], p.area, p.regulation, memberName(p.owner) || p.owner_label, p.approver, p.version,
+    p.last_updated, p.review_months, p.next_review, p.next_review ? dDays(p.next_review) : "", p.url, p.notes].map(csvCell).join(";"))].join("\r\n");
+  const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = `regalert-registro-politiche-${todayKey()}.csv`; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast(`${rows.length} politiche esportate`); logEvent("export_policies_csv", { rows: rows.length });
+};
+
+// ---------------------------------------------------------------- "Nuovo": attività, scadenza o politica da qualunque sezione
+const addMenu = $("#add-menu");
+const closeAddMenu = () => { addMenu.hidden = true; $("#b-add").setAttribute("aria-expanded", "false"); };
+$("#b-add").onclick = (e) => { e.stopPropagation(); const open = addMenu.hidden; addMenu.hidden = !open; $("#b-add").setAttribute("aria-expanded", String(open)); if (open) addMenu.querySelector("button").focus(); };
+document.addEventListener("click", (e) => { if (!addMenu.hidden && !e.target.closest(".addmenu")) closeAddMenu(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !addMenu.hidden) { closeAddMenu(); $("#b-add").focus(); } });
+document.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-add],[data-open-task],[data-task-toggle],[data-task-from-alert],[data-open-pol],[data-pol-upd]");
+  if (!t || $("#v-app").hidden) return;
+  if (e.target.closest("[data-stop]") || (e.target.closest("[data-goto-alert]") && t.hasAttribute("data-open-task"))) return;   // link interni alla riga
+  e.preventDefault(); e.stopPropagation(); closeAddMenu();
+  if (t.dataset.add === "task") openTaskForm(null, { due: null });
+  else if (t.dataset.add === "deadline") openDlForm();
+  else if (t.dataset.add === "policy") openPolForm();
+  else if (t.dataset.taskToggle) toggleTask(Number(t.dataset.taskToggle));
+  else if (t.dataset.openTask) openTaskForm(tasks.find((x) => x.id === Number(t.dataset.openTask)));
+  else if (t.dataset.taskFromAlert) openTaskForm(null, { alert: alerts.find((a) => a.id === Number(t.dataset.taskFromAlert)) });
+  else if (t.dataset.polUpd) openPolUpdate(policies.find((x) => x.id === Number(t.dataset.polUpd)));
+  else if (t.dataset.openPol) openPolForm(policies.find((x) => x.id === Number(t.dataset.openPol)));
+}, true);
+$("#b-add-task").onclick = () => openTaskForm();
+$("#b-add-pol").onclick = () => openPolForm();
+
 // ---------------------------------------------------------------- sicurezza
 // celle CSV: evita che un testo raccolto dal web venga eseguito come formula in Excel (CSV injection)
 const csvCell = (v) => { let t = String(v ?? ""); if (/^[=+\-@\t\r]/.test(t)) t = "'" + t; return `"${t.replace(/"/g, '""')}"`; };
@@ -1529,10 +1854,10 @@ const AUDIT_TXT = {
   login: "Accesso", logout: "Uscita", idle_logout: "Uscita automatica per inattività", mfa_verified: "Codice di verifica corretto", mfa_failed: "Codice di verifica errato",
   mfa_enabled: "Verifica in due passaggi attivata", mfa_removed: "Verifica in due passaggi rimossa", password_changed: "Password cambiata",
   export_register_pdf: "Esportato il registro attestazioni (PDF)", export_register_csv: "Esportato il registro attestazioni (CSV)", export_attestation_pdf: "Esportata un'attestazione (PDF)",
-  export_alerts_csv: "Esportati gli alert (CSV)", export_ics: "Esportato il calendario (.ics)",
+  export_alerts_csv: "Esportati gli alert (CSV)", export_policies_csv: "Esportato il registro delle politiche (CSV)", export_ics: "Esportato il calendario (.ics)",
   signup: "Nuova iscrizione", remove: "Utente rimosso", role_change: "Ruolo cambiato", create: "Creata", update: "Modificata", delete: "Eliminata", insert: "Impostazione aggiunta", reopen: "Riaperta dopo il completamento",
 };
-const ENTITY_TXT = { source: "Fonte", setting: "Impostazione", deadline: "Scadenza", profile: "Utente", session: "" };
+const ENTITY_TXT = { source: "Fonte", setting: "Impostazione", deadline: "Scadenza", task: "Attività", policy: "Politica", profile: "Utente", session: "" };
 let auditRows = [];
 function auditDetail(r) {
   const d = r.details || {};
@@ -1777,7 +2102,7 @@ $("#b-send-digest").onclick = async () => {
 $("#dl-v-list").onclick = () => { dlView = "list"; store.set("ra_dl_view", "list"); renderDeadlines(); };
 $("#dl-v-month").onclick = () => { dlView = "month"; store.set("ra_dl_view", "month"); renderDeadlines(); };
 ["#dl-f-kind", "#dl-f-auth", "#dl-f-area"].forEach((s) => $(s).addEventListener("change", renderDeadlines));
-["#dl-f-mine", "#dl-f-alerts"].forEach((s) => ($(s).onclick = (e) => { e.currentTarget.setAttribute("aria-pressed", e.currentTarget.getAttribute("aria-pressed") !== "true"); renderDeadlines(); }));
+["#dl-f-mine", "#dl-f-alerts", "#dl-f-tasks", "#dl-f-pol"].forEach((s) => ($(s).onclick = (e) => { e.currentTarget.setAttribute("aria-pressed", e.currentTarget.getAttribute("aria-pressed") !== "true"); renderDeadlines(); }));
 $("#b-add-dl").onclick = () => openDlForm();
 $("#b-ics").onclick = () => { exportIcs(); logEvent("export_ics"); };
 $$("[data-close-dl]").forEach((b) => (b.onclick = () => $("#dlg-dl").close()));

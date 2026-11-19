@@ -309,6 +309,43 @@ pre.diff .del { color: var(--crit); background: var(--crit-soft); display: block
 .dl-acts { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; min-width: 0; }
 .when { font-weight: 600; font-size: 12.5px; white-space: nowrap; }
 .when.over { color: var(--crit); } .when.soon { color: var(--high); } .when.later { color: var(--muted); font-weight: 500; }
+.k-task { color: #2a5b2f; background: #e5f2e3; } .k-policy { color: #6b4e00; background: #f8efd2; }
+:root[data-theme="dark"] .k-task, :root[data-theme="dark"] .k-policy { background: var(--surface-2); filter: brightness(1.5); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .k-task, :root:not([data-theme="light"]) .k-policy { background: var(--surface-2); filter: brightness(1.5); } }
+.addmenu { position: relative; }
+.addmenu .menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 45; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 16px 40px rgba(10,18,32,.18); padding: 6px; display: grid; width: 280px; }
+.addmenu .menu button { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; align-items: start; text-align: left; border: 0; background: none; color: var(--fg); font: inherit; padding: 9px 10px; border-radius: 8px; cursor: pointer; }
+.addmenu .menu button:hover, .addmenu .menu button:focus-visible { background: var(--surface-2); outline: none; }
+.addmenu .menu svg { width: 20px; height: 20px; color: var(--accent); margin-top: 1px; }
+.addmenu .menu small { display: block; color: var(--muted); font-size: 12px; }
+.tk { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 16px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.tk:last-child { border-bottom: 0; } .tk:hover { background: var(--surface-2); }
+.tk .chk { width: 22px; height: 22px; border-radius: 7px; border: 1.6px solid var(--line-strong); background: var(--surface); display: grid; place-items: center; cursor: pointer; padding: 0; color: #fff; margin-top: 1px; }
+.tk .chk svg { width: 14px; height: 14px; }
+.tk .chk:disabled { cursor: default; opacity: .5; }
+.tk.done .chk { background: var(--ok); border-color: var(--ok); }
+.tk.done .t { text-decoration: line-through; text-decoration-color: var(--line-strong); color: var(--muted); }
+.tk .t { font-weight: 500; overflow-wrap: anywhere; }
+.tk .desc { color: var(--muted); font-size: 13px; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.pri-critical { color: var(--crit); } .pri-high { color: var(--high); } .pri-medium { color: var(--fg-2); } .pri-low { color: var(--muted); }
+.st-doing { color: var(--accent); background: var(--accent-soft); }
+.pol { display: grid; grid-template-columns: minmax(0, 1fr) 210px auto; gap: 14px; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.pol:last-child { border-bottom: 0; } .pol:hover { background: var(--surface-2); }
+.pol .t { font-weight: 500; overflow-wrap: anywhere; }
+.pol .rev { display: grid; gap: 2px; font-size: 12.5px; }
+.pol .rev b { font-size: 13.5px; font-variant-numeric: tabular-nums; }
+.pol.retired { opacity: .55; }
+.hist { display: grid; gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.hist div { display: grid; grid-template-columns: 90px 64px minmax(0, 1fr); gap: 10px; padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: 13px; }
+.hist div:last-child { border-bottom: 0; }
+@media (max-width: 860px) {
+  .pol { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .pol .acts { justify-self: start; grid-column: 1 / -1; }
+  .tk { grid-template-columns: 26px minmax(0, 1fr); } .tk .tk-acts { grid-column: 2; }
+  .hist div { grid-template-columns: 80px minmax(0, 1fr); } .hist div span:last-child { grid-column: 1 / -1; }
+  #b-add-task, #b-add-pol { display: none; }
+  .addmenu .menu { position: fixed; left: 12px; right: 12px; width: auto; top: calc(56px + env(safe-area-inset-top, 0px)); }
+}
 .k-regulatory { color: #1f4fa3; background: #e6eefb; } .k-reporting { color: #8a4b08; background: #fdf0df; } .k-consultation { color: #0b6e5c; background: #e0f3ee; } .k-internal { color: #5b4a8b; background: #eeeaf8; } .k-control { color: #8a2d4b; background: #fbe8ee; }
 :root[data-theme="dark"] .k-regulatory, :root[data-theme="dark"] .k-reporting, :root[data-theme="dark"] .k-consultation, :root[data-theme="dark"] .k-internal, :root[data-theme="dark"] .k-control { background: var(--surface-2); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .k-regulatory, :root:not([data-theme="light"]) .k-reporting, :root:not([data-theme="light"]) .k-consultation, :root:not([data-theme="light"]) .k-internal, :root:not([data-theme="light"]) .k-control { background: var(--surface-2); filter: brightness(1.6); } }
@@ -561,6 +598,8 @@ details.adv[open] summary { margin-bottom: 12px; }
   <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></symbol>
   <symbol id="i-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4h11l-1.5 4L16 12H5"/></symbol>
   <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></symbol>
+  <symbol id="i-task" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="m8 12 3 3 5-6"/></symbol>
+  <symbol id="i-policy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h4"/></symbol>
   <symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
   <symbol id="i-repeat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></symbol>
@@ -664,7 +703,9 @@ details.adv[open] summary { margin-bottom: 12px; }
     <div class="logo"><div class="logo-mark"><svg><use href="#i-logo"/></svg></div><div><b>RegAlert</b><small id="org-line">Monitoraggio normativo</small></div></div>
     <nav class="nav" id="nav" aria-label="Sezioni">
       <button data-view="alerts" aria-current="page"><svg><use href="#i-inbox"/></svg>Alert<span class="count" id="nav-count" hidden></span></button>
+      <button data-view="tasks"><svg><use href="#i-task"/></svg>Attività<span class="count" id="nav-tasks" hidden></span></button>
       <button data-view="deadlines"><svg><use href="#i-cal"/></svg>Scadenziario<span class="count" id="nav-dl" hidden></span></button>
+      <button data-view="policies"><svg><use href="#i-policy"/></svg>Politiche<span class="count" id="nav-pol" hidden></span></button>
       <button data-view="sources"><svg><use href="#i-radar"/></svg>Fonti<span class="count" id="nav-src-err" hidden style="background:var(--crit);"></span></button>
       <button data-view="team"><svg><use href="#i-team"/></svg>Team<span class="count" id="nav-pending" hidden style="background:var(--gold);color:var(--ink)"></span></button>
       <button data-view="settings" data-admin><svg><use href="#i-gear"/></svg>Impostazioni</button>
@@ -681,10 +722,10 @@ details.adv[open] summary { margin-bottom: 12px; }
   <div class="scrim" id="scrim" hidden></div>
   <nav class="tabbar" id="tabbar" aria-label="Sezioni">
     <button data-view="alerts"><svg><use href="#i-inbox"/></svg>Alert<span class="tb" data-src="nav-count" hidden></span></button>
+    <button data-view="tasks"><svg><use href="#i-task"/></svg>Attività<span class="tb" data-src="nav-tasks" hidden></span></button>
     <button data-view="deadlines"><svg><use href="#i-cal"/></svg>Scadenze<span class="tb" data-src="nav-dl" hidden></span></button>
-    <button data-view="sources"><svg><use href="#i-radar"/></svg>Fonti<span class="tb crit" data-src="nav-src-err" hidden></span></button>
-    <button data-view="team"><svg><use href="#i-team"/></svg>Team<span class="tb gold" data-src="nav-pending" hidden></span></button>
-    <button data-more aria-label="Altro: impostazioni, stato e uscita"><svg><use href="#i-menu"/></svg>Altro</button>
+    <button data-view="policies"><svg><use href="#i-policy"/></svg>Politiche<span class="tb" data-src="nav-pol" hidden></span></button>
+    <button data-more aria-label="Altro: fonti, team, impostazioni e uscita"><svg><use href="#i-menu"/></svg>Altro<span class="tb crit" data-src="nav-src-err" hidden></span></button>
   </nav>
 
   <div class="main">
@@ -693,6 +734,14 @@ details.adv[open] summary { margin-bottom: 12px; }
       <h1 id="view-title">Alert</h1>
       <div class="spacer"></div>
       <div class="search" id="search-box"><svg><use href="#i-search"/></svg><input type="search" id="q" placeholder="Cerca" aria-label="Cerca negli alert"><kbd>/</kbd></div>
+      <div class="addmenu" data-edit>
+        <button class="btn primary" id="b-add" aria-haspopup="menu" aria-expanded="false" title="Aggiungi"><svg><use href="#i-plus"/></svg><span class="collect-label">Nuovo</span></button>
+        <div class="menu" id="add-menu" role="menu" hidden>
+          <button role="menuitem" data-add="task"><svg><use href="#i-task"/></svg><span><b>Attività</b><small>Un compito da assegnare e seguire</small></span></button>
+          <button role="menuitem" data-add="deadline"><svg><use href="#i-cal"/></svg><span><b>Scadenza</b><small>Normativa, segnalazione, controllo</small></span></button>
+          <button role="menuitem" data-add="policy"><svg><use href="#i-policy"/></svg><span><b>Politica o procedura</b><small>Da tenere aggiornata nel registro</small></span></button>
+        </div>
+      </div>
       <button class="btn" id="b-collect" data-edit title="Controlla subito tutte le fonti"><svg><use href="#i-refresh"/></svg><span class="collect-label">Controlla ora</span></button>
     </header>
     <div class="netbar" id="netbar" hidden role="status"><svg width="14" height="14"><use href="#i-dot"/></svg>Sei offline: i dati mostrati potrebbero non essere aggiornati</div>
@@ -749,10 +798,49 @@ details.adv[open] summary { margin-bottom: 12px; }
           <span class="pillselect"><select id="dl-f-area" aria-label="Area"><option value="">Area</option></select></span>
           <button class="chiptoggle" id="dl-f-mine" aria-pressed="false">Assegnate a me</button>
           <button class="chiptoggle" id="dl-f-alerts" aria-pressed="true" title="Mostra anche le scadenze interne fissate nel triage degli alert">Scadenze di triage</button>
+          <button class="chiptoggle" id="dl-f-tasks" aria-pressed="true" title="Mostra anche le attività con una data">Attività</button>
+          <button class="chiptoggle" id="dl-f-pol" aria-pressed="true" title="Mostra anche le revisioni delle politiche">Revisioni politiche</button>
         </div>
         <div id="dl-proposals"></div>
         <div id="dl-presidi"></div>
         <div id="dl-body" class="stack" style="display:grid;gap:20px"></div>
+      </section>
+
+      <!-- ATTIVITÀ -->
+      <section id="view-tasks" class="page" hidden style="max-width:1040px">
+        <div class="page-h">
+          <div><h2>Attività</h2><p>I compiti del team: chi fa cosa e entro quando. Quelle con una data compaiono anche nello scadenziario e nel digest del mattino.</p></div>
+          <div class="spacer"></div>
+          <button class="btn primary" id="b-add-task" data-edit><svg><use href="#i-plus"/></svg>Nuova attività</button>
+        </div>
+        <div class="stats" id="task-stats"></div>
+        <div class="filters" style="padding:0;border:0">
+          <div class="seg" role="group" aria-label="Di chi"><button id="tk-mine" aria-pressed="true">Mie</button><button id="tk-all" aria-pressed="false">Tutte</button></div>
+          <div class="seg" role="group" aria-label="Stato"><button id="tk-open" aria-pressed="true">Aperte</button><button id="tk-done" aria-pressed="false">Completate</button></div>
+          <span class="pillselect"><select id="tk-f-pri" aria-label="Priorità"><option value="">Priorità</option></select></span>
+          <span class="pillselect"><select id="tk-f-who" aria-label="Responsabile"><option value="">Responsabile</option></select></span>
+        </div>
+        <div id="task-body" style="display:grid;gap:20px"></div>
+      </section>
+
+      <!-- POLITICHE -->
+      <section id="view-policies" class="page" hidden style="max-width:1120px">
+        <div class="page-h">
+          <div><h2>Politiche e procedure</h2><p>Il registro dei documenti interni: versione in vigore, ultimo aggiornamento e data entro cui rivederli. Le revisioni in arrivo compaiono nello scadenziario e nel digest.</p></div>
+          <div class="spacer"></div>
+          <div class="dl-toolbar">
+            <button class="btn" id="b-pol-csv" title="Esporta il registro in CSV"><svg><use href="#i-download"/></svg>CSV</button>
+            <button class="btn primary" id="b-add-pol" data-edit><svg><use href="#i-plus"/></svg>Nuova politica</button>
+          </div>
+        </div>
+        <div class="stats" id="pol-stats"></div>
+        <div class="filters" style="padding:0;border:0">
+          <span class="search" style="width:auto;flex:1 1 200px;max-width:320px"><svg><use href="#i-search"/></svg><input type="search" id="pol-q" placeholder="Cerca per titolo o codice" aria-label="Cerca nelle politiche"></span>
+          <span class="pillselect"><select id="pol-f-area" aria-label="Area"><option value="">Area</option></select></span>
+          <span class="pillselect"><select id="pol-f-status" aria-label="Stato"><option value="">Stato</option></select></span>
+          <button class="chiptoggle" id="pol-f-due" aria-pressed="false">Da rivedere</button>
+        </div>
+        <div id="pol-body"></div>
       </section>
 
       <!-- TEAM -->
@@ -812,7 +900,7 @@ details.adv[open] summary { margin-bottom: 12px; }
         </form>
         <div class="card panel" id="audit-card">
           <div class="ph-row"><h3>Registro di sicurezza</h3><span class="hint">Accessi, ruoli, fonti, impostazioni, cancellazioni ed esportazioni. Non modificabile.</span>
-            <span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap"><span class="pillselect"><select id="audit-f" aria-label="Filtra"><option value="">Tutti gli eventi</option><option value="session">Accessi ed esportazioni</option><option value="profile">Utenti e ruoli</option><option value="source">Fonti</option><option value="setting">Impostazioni</option><option value="deadline">Scadenze</option></select></span><button type="button" class="btn sm" id="audit-csv"><svg><use href="#i-download"/></svg>CSV</button></span></div>
+            <span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap"><span class="pillselect"><select id="audit-f" aria-label="Filtra"><option value="">Tutti gli eventi</option><option value="session">Accessi ed esportazioni</option><option value="profile">Utenti e ruoli</option><option value="source">Fonti</option><option value="setting">Impostazioni</option><option value="deadline">Scadenze</option><option value="task">Attività</option><option value="policy">Politiche</option></select></span><button type="button" class="btn sm" id="audit-csv"><svg><use href="#i-download"/></svg>CSV</button></span></div>
           <div class="audit-list" id="audit-list"></div>
         </div>
       </section>
@@ -915,6 +1003,74 @@ details.adv[open] summary { margin-bottom: 12px; }
       <div class="field"><label for="o-note">Note ed evidenze</label><textarea id="o-note" placeholder="Es. campione di 25 posizioni, nessuna anomalia; report nel fascicolo di novembre"></textarea><span class="hint" id="o-note-hint">Restano nello storico del controllo.</span></div>
     </div>
     <div class="dlg-f"><button type="button" class="btn" id="o-cancel">Annulla</button><button class="btn primary" id="o-save">Registra</button></div>
+  </form>
+</dialog>
+
+<!-- attività -->
+<dialog id="dlg-task" style="width:min(620px, calc(100vw - 32px))" aria-labelledby="tk-h">
+  <form id="f-task" method="dialog" style="display:flex;flex-direction:column;max-height:calc(100dvh - 48px)" novalidate>
+    <div class="dlg-h"><h3 id="tk-h">Nuova attività</h3><button type="button" class="btn ghost sm" data-close aria-label="Chiudi"><svg><use href="#i-x"/></svg></button></div>
+    <div class="dlg-b">
+      <div id="tk-link" class="test-out" hidden></div>
+      <div class="field"><label for="tk-title">Cosa fare</label><input id="tk-title" required maxlength="300" placeholder="Es. Aggiornare la procedura reclami con le nuove tempistiche"></div>
+      <div class="field"><label for="tk-desc">Dettagli</label><textarea id="tk-desc" rows="3" maxlength="5000" placeholder="Contesto, documenti, criteri di completamento"></textarea></div>
+      <div class="grid2">
+        <div class="field"><label for="tk-who">Responsabile</label><select id="tk-who"></select></div>
+        <div class="field"><label for="tk-due">Entro il</label><input id="tk-due" type="date"><span class="hint">Facoltativo.</span></div>
+        <div class="field"><label for="tk-pri">Priorità</label><select id="tk-pri"></select></div>
+        <div class="field"><label for="tk-st">Stato</label><select id="tk-st"><option value="todo">Da fare</option><option value="doing">In corso</option><option value="done">Completata</option><option value="cancelled">Annullata</option></select></div>
+      </div>
+      <p class="hint" id="tk-meta" style="margin:0"></p>
+    </div>
+    <div class="dlg-f"><button type="button" class="btn ghost" id="tk-del" style="margin-right:auto;color:var(--crit)">Elimina</button><button type="button" class="btn" data-close>Annulla</button><button class="btn primary" id="tk-save">Salva</button></div>
+  </form>
+</dialog>
+
+<!-- politica: scheda -->
+<dialog id="dlg-pol" style="width:min(760px, calc(100vw - 32px))" aria-labelledby="pl-h">
+  <form id="f-pol" method="dialog" style="display:flex;flex-direction:column;max-height:calc(100dvh - 48px)" novalidate>
+    <div class="dlg-h"><h3 id="pl-h">Nuova politica</h3><button type="button" class="btn ghost sm" data-close aria-label="Chiudi"><svg><use href="#i-x"/></svg></button></div>
+    <div class="dlg-b">
+      <div class="grid2">
+        <div class="field"><label for="pl-title">Titolo</label><input id="pl-title" required maxlength="300" placeholder="Es. Policy antiriciclaggio"></div>
+        <div class="field"><label for="pl-code">Codice</label><input id="pl-code" maxlength="40" class="mono" placeholder="Es. POL-AML-01"></div>
+        <div class="field"><label for="pl-type">Tipo</label><select id="pl-type"></select></div>
+        <div class="field"><label for="pl-status">Stato</label><select id="pl-status"></select></div>
+        <div class="field"><label for="pl-area">Area</label><input id="pl-area" list="pol-areas" placeholder="Es. AML/CFT, Market Abuse, Reclami"><datalist id="pol-areas"></datalist></div>
+        <div class="field"><label for="pl-reg">Riferimento normativo</label><input id="pl-reg" placeholder="Es. D.Lgs. 231/2007, MiCAR art. 72"></div>
+        <div class="field"><label for="pl-owner">Responsabile</label><select id="pl-owner"></select></div>
+        <div class="field"><label for="pl-owner-label">oppure funzione esterna al team</label><input id="pl-owner-label" placeholder="Es. Funzione Risk"></div>
+        <div class="field"><label for="pl-approver">Approvata da</label><input id="pl-approver" placeholder="Es. Consiglio di Amministrazione"></div>
+        <div class="field"><label for="pl-version">Versione in vigore</label><input id="pl-version" maxlength="20" placeholder="Es. 3.0"></div>
+        <div class="field"><label for="pl-last">Ultimo aggiornamento</label><input id="pl-last" type="date"></div>
+        <div class="field"><label for="pl-every">Revisione</label><select id="pl-every"><option value="">Nessuna periodicità</option><option value="6">Ogni 6 mesi</option><option value="12">Ogni anno</option><option value="24">Ogni 2 anni</option><option value="36">Ogni 3 anni</option></select></div>
+        <div class="field"><label for="pl-next">Da rivedere entro</label><input id="pl-next" type="date"><span class="hint" id="pl-next-hint">Calcolata dall'ultimo aggiornamento, modificabile.</span></div>
+        <div class="field"><label for="pl-remind">Preavviso nel digest</label><select id="pl-remind"><option value="14">14 giorni prima</option><option value="30">30 giorni prima</option><option value="60">60 giorni prima</option><option value="90">90 giorni prima</option></select></div>
+      </div>
+      <div class="field"><label for="pl-url">Link al documento</label><input id="pl-url" type="url" placeholder="https://… (SharePoint, Drive, intranet)"></div>
+      <div class="field"><label for="pl-notes">Note</label><textarea id="pl-notes" rows="2" maxlength="5000"></textarea></div>
+      <div id="pl-history"></div>
+    </div>
+    <div class="dlg-f"><button type="button" class="btn ghost" id="pl-del" style="margin-right:auto;color:var(--crit)">Elimina</button><button type="button" class="btn" data-close>Annulla</button><button class="btn primary">Salva</button></div>
+  </form>
+</dialog>
+
+<!-- politica: registra aggiornamento -->
+<dialog id="dlg-polupd" style="width:min(560px, calc(100vw - 32px))" aria-labelledby="pu-h">
+  <form id="f-polupd" method="dialog" novalidate>
+    <div class="dlg-h"><h3 id="pu-h">Registra aggiornamento</h3><button type="button" class="btn ghost sm" data-close aria-label="Chiudi"><svg><use href="#i-x"/></svg></button></div>
+    <div class="dlg-b">
+      <p id="pu-what" style="margin:0;font-weight:500"></p>
+      <div class="grid2">
+        <div class="field"><label for="pu-version">Nuova versione</label><input id="pu-version" maxlength="20"></div>
+        <div class="field"><label for="pu-date">Aggiornata il</label><input id="pu-date" type="date" required></div>
+        <div class="field"><label for="pu-approver">Approvata da</label><input id="pu-approver"></div>
+        <div class="field"><label for="pu-next">Prossima revisione entro</label><input id="pu-next" type="date"><span class="hint" id="pu-next-hint"></span></div>
+      </div>
+      <div class="field"><label for="pu-note">Cosa è cambiato</label><textarea id="pu-note" rows="3" maxlength="3000" placeholder="Es. recepite le nuove regole sulla Travel Rule; delibera CdA del 12/11"></textarea></div>
+      <p class="hint" style="margin:0">L'aggiornamento entra nello storico della politica e non si può modificare.</p>
+    </div>
+    <div class="dlg-f"><button type="button" class="btn" data-close>Annulla</button><button class="btn primary">Registra</button></div>
   </form>
 </dialog>
 
